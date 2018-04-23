@@ -1,0 +1,404 @@
+<?php
+
+include_once 'HAXService.php';
+
+/**
+ * @file
+ * Headless Authoring eXperience, all we do is accept calls and make things haxable in the first place.
+ */
+
+define('HAX_DEFAULT_ELEMENTS', 'video-player wikipedia-query pdf-element lrn-table media-image');
+
+/**
+ * Implements hook_permission().
+ */
+function hax_permission() {
+  return array(
+    'use hax' =>  array(
+      'title' => t('Use HAX editor'),
+      'description' => t('Advanced authoring experience that is pulled in from hax capable web components.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function hax_menu() {
+  $items['hax-node-save/%node/%'] = array(
+    'page callback' => '_hax_node_save',
+    'page arguments' => array(1, 2),
+    'type' => MENU_CALLBACK,
+    'access callback' => '_hax_node_access',
+    'access arguments' => array('update', 1),
+  );
+  $items['hax-file-save/%'] = array(
+    'page callback' => '_hax_file_save',
+    'page arguments' => array(1),
+    'type' => MENU_CALLBACK,
+    'access callback' => '_hax_file_access',
+    'access arguments' => array('create'),
+  );
+  $items['hax-app-store/%'] = array(
+    'page callback' => '_hax_load_app_store',
+    'page arguments' => array(1),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'user_access',
+    'access arguments' => array('use hax'),
+  );
+  $items['node/%node/hax'] = array(
+    'title' => 'HAX mode',
+    'description' => 'Edit the node with HAX',
+    'page callback' => '_hax_node_form',
+    'page arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'access callback' => '_hax_node_access',
+    'access arguments' => array('update', 1),
+  );
+  $items['admin/config/content/hax'] = array(
+    'title' => 'HAX',
+    'description' => 'Settings for basic customizations to HAX.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hax_settings'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_node_view().
+ */
+//function hax_node_view(array &$build, \Drupal\node\NodeInterface &$build, \Drupal\node\NodeInterface &$build, \Drupal\node\NodeInterface $node, $view_mode, $langcode) {
+function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
+  if ($view_mode == 'full' && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
+    // generate autoload list
+    // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/hax.settings.yml and config/schema/hax.schema.yml.
+$elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+    // blow up based on space
+    $elements = explode(' ', $elementstring);
+    foreach ($elements as $element) {
+      $component = new stdClass();
+      $component->machine_name = $element;
+      // pull in from webcomponents location
+      $component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/' . $element . '/' . $element . '.html';
+      _webcomponents_add_to_head($component, 10001);
+    }
+  }
+}
+
+/**
+ * Callback to save just the body field.
+ */
+function _hax_node_save(\Drupal\node\NodeInterface $node, $token) {
+  // ensure we had data PUT here and it is valid
+  if ($_SERVER['REQUEST_METHOD'] == 'PUT' && drupal_valid_token($token, 'hax')) {
+    // load the data from input stream
+    $body = file_get_contents("php://input");
+    $node->body[0]->value = $body;
+    if (!isset($node->body[0]->format)) {
+      $node->body[0]->format = filter_default_format();
+    }
+    $node->save();
+    // send back happy headers
+    drupal_add_http_header('Content-Type', 'application/json');
+    // define status
+    drupal_add_http_header('Status', 200);
+    $return = array(
+      'status' => 200,
+      'message' => t('Save successful!'),
+      'data' => $node,
+    );
+    // output the response as json
+    print drupal_json_output($return);
+    exit;
+  }
+}
+
+/**
+ * Callback to assemble the hax app store
+ */
+function _hax_load_app_store($token) {
+  // ensure we had data PUT here and it is valid
+  if (drupal_valid_token($token, 'hax')) {
+    $appStore = \Drupal::moduleHandler()->invokeAll('hax_app_store');
+    \Drupal::moduleHandler()->alter('hax_app_store', $appStore);
+    $staxList = \Drupal::moduleHandler()->invokeAll('hax_stax');
+    \Drupal::moduleHandler()->alter('hax_stax', $staxList);
+    // send back happy headers
+    drupal_add_http_header('Content-Type', 'application/json');
+    // define status
+    drupal_add_http_header('Status', 200);
+    $return = array(
+      'status' => 200,
+      'apps' => $appStore,
+      'stax' => $staxList,
+    );
+    // output the response as json
+    print drupal_json_output($return);
+    exit;
+  }
+}
+
+/**
+ * Permission + Node access check.
+ */
+function _hax_node_access($op, \Drupal\node\NodeInterface $node, Drupal\Core\Session\AccountInterface $account) {
+  if (\Drupal::currentUser()->hasPermission('use hax') && node_access($op, $node)) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Permission + File access check.
+ */
+function _hax_file_access($op, Drupal\Core\Session\AccountInterface $account) {
+  if (\Drupal::currentUser()->hasPermission('use hax') && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Save a file to the file system.
+ */
+function _hax_file_save($token) {
+  $status = 403;
+  // check for the uploaded file from our 1-page-uploader app
+  // and ensure there are entity permissions to create a file of this type
+  if (drupal_valid_token($token, 'hax') && isset($_FILES['file-upload']) && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
+    $upload = $_FILES['file-upload'];
+    // check for a file upload
+    if (isset($upload['tmp_name']) && is_uploaded_file($upload['tmp_name'])) {
+      // get contents of the file if it was uploaded into a variable
+      $data = file_get_contents($upload['tmp_name']);
+      $params = filter_var_array($_GET, FILTER_SANITIZE_STRING);
+      // see if we had a file_wrapper defined, otherwise this is public
+      if (isset($params['file_wrapper'])) {
+        $file_wrapper = $params['file_wrapper'];
+      }
+      else {
+        $file_wrapper = 'public';
+      }
+      // see if Drupal can load from this data source
+      if ($file = file_save_data($data, $file_wrapper . '://' . $upload['name'])) {
+        file_save($file);
+        $file->url = file_create_url($file->uri);
+        $return = array('file' => $file);
+        $status = 200;
+      }
+    }
+  }
+  // send back happy headers
+  drupal_add_http_header('Content-Type', 'application/json');
+  // define status
+  drupal_add_http_header('Status', 200);
+  $return = array(
+    'status' => $status,
+    'data' => $return,
+  );
+  // output the response as json
+  print drupal_json_output($return);
+  exit;
+}
+
+/**
+ * Present the node form but wrap the content in hax-body tag
+ * @param  [type] $node [description]
+ * @return [type]       [description]
+ */
+function _hax_node_form(\Drupal\node\NodeInterface $node) {
+  // set page title
+  // @FIXME
+// drupal_set_title() has been removed. There are now a few ways to set the title
+// dynamically, depending on the situation.
+// 
+// 
+// @see https://www.drupal.org/node/2067859
+// drupal_set_title(t('HAX edit @title', array('@title' => $node->getTitle())), PASS_THROUGH);
+
+  // fake a component to get it into the head of the document, heavy weighting
+  $component = new stdClass();
+  $component->machine_name = 'cms-hax';
+  // pull in from webcomponents location
+  $component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/cms-hax/cms-hax.html';
+  _webcomponents_add_to_head($component, 10000);
+  // generate autoload list
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/hax.settings.yml and config/schema/hax.schema.yml.
+$elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+  // blow up based on space
+  $elements = explode(' ', $elementstring);
+  $components = '';
+  foreach ($elements as $element) {
+    // sanity check
+    if (!empty($element)) {
+      $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
+    }
+  }
+  $appStoreConnection = array(
+    'url' => base_path() . 'hax-app-store/' . drupal_get_token('hax'),
+  );
+  // write content to screen, wrapped in tag to do all the work
+  $content = '
+  <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . drupal_get_token('hax') . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+  . $components .
+    check_markup($node->body[0]->value, $node->body[0]->format)
+  .'</cms-hax>';
+  return $content;
+}
+
+/**
+ * Helper function to make outline designer settings more obvious.
+ */
+function hax_settings($form, &$form_state) {
+  $form['hax_offset_left'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Offset'),
+    '#default_value' => \Drupal::config('hax.settings')->get('hax_offset_left'),
+    '#description' => t("Helps with theme compatibility when positioning the context menu. Adjust this if HAX context menu doesn't correctly align with the side of your content when editing. Value is in pixels but should not include px. Some themes that mess with box-model may or may not have this issue."),
+  );
+  // collapse default state
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/hax.settings.yml and config/schema/hax.schema.yml.
+$form['hax_autoload_element_list'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Elements to autoload'),
+    '#default_value' => \Drupal::config('hax.settings')->get('hax_autoload_element_list'),
+    '#maxlength' => 1000,
+    '#description' => t("This allows for auto-loading elements known to play nice with HAX. If you've written any webcomponents that won't automatically be loaded into the page via that module this allows you to attempt to auto-load them when HAX loads. For example, if you have a video-player element in your bower_components directory and want it to load on this interface, this would be a simple way to do that. Spaces only between elements, no comma"),
+  );
+  $hax = new HAXService();
+  $baseApps = $hax->baseSupportedApps();
+  foreach ($baseApps as $key => $app) {
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// $form['hax_' . $key . '_key'] = array(
+//       '#type' => 'textfield',
+//       '#title' => t('@name API key', array('@name' => $app['name'])),
+//       '#default_value' => variable_get('hax_' . $key . '_key', ''),
+//       '#description' => t('See') . ' ' . l(t('@name developer docs', array('@name' => $app['name'])), $app['docs']) . ' ' . t('for details'),
+//     );
+
+  }
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_hax_app_store().
+ */
+function hax_hax_app_store() {
+  $hax = new HAXService();
+  $apikeys = array();
+  $baseApps = $hax->baseSupportedApps();
+  foreach ($baseApps as $key => $app) {
+    // @FIXME
+// // @FIXME
+// // The correct configuration object could not be determined. You'll need to
+// // rewrite this call manually.
+// if (variable_get('hax_' . $key . '_key', '') != '') {
+//       $apikeys[$key] = variable_get('hax_' . $key . '_key', '');
+//     }
+
+  }
+  $json = $hax->loadBaseAppStore($apikeys);
+  // pull in the core ones we supply
+  if (\Drupal::moduleHandler()->moduleExists('file_entity') && \Drupal::moduleHandler()->moduleExists('restws')) {
+    $tmp = json_decode(_hax_site_connection());
+    array_push($json, $tmp);
+  }
+  return $json;
+}
+
+/**
+ * Connection details for this site. This is where
+ * all the really important stuff is that will
+ * make people freak out.
+ */
+function _hax_site_connection() {
+  global $base_url;
+  $parts = explode('://', $base_url);
+  // built in support when file_entity and restws is in place
+  $json = '{
+    "details": {
+      "title": "' . t('Internal files') . '",
+      "icon": "perm-media",
+      "color": "light-blue",
+      "author": "Drupal",
+      "description": "Drupal site integration for HAX",
+      "tags": ["media", "drupal"]
+    },
+    "connection": {
+      "protocol": "' . $parts[0] . '",
+      "url": "' . $parts[1] . '",
+      "operations": {
+        "browse": {
+          "method": "GET",
+          "endPoint": "file.json",
+          "pagination": {
+            "style": "link",
+            "props": {
+              "first": "page.first",
+              "next": "page.next",
+              "previous": "page.previous",
+              "last": "page.last"
+            }
+          },
+          "search": {
+          },
+          "data": {
+          },
+          "resultMap": {
+            "defaultGizmoType": "image",
+            "items": "list",
+            "preview": {
+              "title": "name",
+              "details": "mime",
+              "image": "url",
+              "id": "uuid"
+            },
+            "gizmo": {
+              "source": "url",
+              "id": "uuid",
+              "title": "name",
+              "type": "type"
+            }
+          }
+        },
+        "add": {
+          "method": "POST",
+          "endPoint": "hax-file-save/' . drupal_get_token('hax') . '",
+          "acceptsGizmoTypes": [
+            "image",
+            "video",
+            "audio",
+            "pdf",
+            "svg",
+            "document",
+            "csv"
+          ],
+          "resultMap": {
+            "item": "data.file",
+            "defaultGizmoType": "image",
+            "gizmo": {
+              "source": "url",
+              "id": "uuid"
+            }
+          }
+        }
+      }
+    }
+  }';
+  return $json;
+}

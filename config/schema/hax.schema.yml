@@ -1,0 +1,24 @@
+hax.settings:
+  type: mapping
+  label: Settings
+  mapping:
+    hax_autoload_element_node_view:
+      type: boolean
+    hax_autoload_element_list:
+      type: string 
+    hax_offset_left:
+      type: integer
+    hax_youtube_key:
+      type: string
+    hax_memegenerator_key:
+      type: string
+    hax_vimeo_key:
+      type: string
+    hax_giphy_key:
+      type: string
+    hax_unsplash_key:
+      type: string
+    hax_flickr_key:
+      type: string
+    hax_pixabay_key:
+      type: string

@@ -1,0 +1,35 @@
+hax.node_save:
+  path: '/hax-node-save/{node}/{token}'
+  defaults:
+    op: update
+    _controller: '\Drupal\hax\Controller\DefaultController::_hax_node_save'
+  requirements:
+    _custom_access: '\Drupal\hax\Controller\DefaultController::_hax_node_access'
+hax.file_save:
+  path: '/hax-file-save/{token}'
+  defaults:
+    op: create
+    _controller: '\Drupal\hax\Controller\DefaultController::_hax_file_save'
+  requirements:
+    _custom_access: '\Drupal\hax\Controller\DefaultController::_hax_file_access'
+hax.load_app_store:
+  path: '/hax-app-store/{token}'
+  defaults:
+    _controller: '\Drupal\hax\Controller\DefaultController::_hax_load_app_store'
+  requirements:
+    _permission: 'use hax'
+hax.node_form:
+  path: '/node/{node}/hax'
+  defaults:
+    op: update
+    _title: 'HAX mode'
+    _controller: '\Drupal\hax\Controller\DefaultController::_hax_node_form'
+  requirements:
+    _custom_access: '\Drupal\hax\Controller\DefaultController::_hax_node_access'
+hax.settings:
+  path: /admin/config/content/hax
+  defaults:
+    _title: HAX
+    _form: \Drupal\hax\Form\HaxSettings
+  requirements:
+    _permission: 'administer site configuration'
