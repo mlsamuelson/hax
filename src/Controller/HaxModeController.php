@@ -29,11 +29,6 @@ class HaxModeController extends NodeViewController {
 
     $build = parent::view($node, $view_mode, $langcode);
 
-    //dpm($build['body'][0]['#text']);
-    //dpm($build['#node']);
-
-
-    // TODO Can we dispense with the above, except for the parent:: call?
     // Add HAX components to node.
 
     // Only apply on full view mode.
