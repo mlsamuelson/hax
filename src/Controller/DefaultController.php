@@ -5,6 +5,7 @@
 
 namespace Drupal\hax\Controller;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Controller\ControllerBase;
 
 /**
@@ -12,11 +13,14 @@ use Drupal\Core\Controller\ControllerBase;
  */
 class DefaultController extends ControllerBase {
 
-  public function _hax_node_access($op, \Drupal\node\NodeInterface $node, Drupal\Core\Session\AccountInterface $account) {
-    if (user_access('use hax') && node_access($op, $node)) {
-      return TRUE;
+  /**
+   * Permission + Node access check.
+   */
+  public function _hax_node_access($op, \Drupal\node\NodeInterface $node) {
+    if (\Drupal::currentUser()->hasPermission('use hax') && node_node_access($node, $op, \Drupal::currentUser())) {
+      return AccessResult::allowed();
     }
-    return FALSE;
+    return AccessResult::forbidden();
   }
 
   public function _hax_node_save(\Drupal\node\NodeInterface $node, $token) {
@@ -44,13 +48,20 @@ class DefaultController extends ControllerBase {
     }
   }
 
-  public function _hax_file_access($op, Drupal\Core\Session\AccountInterface $account) {
-    if (user_access('use hax') && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
-      return TRUE;
+  /**
+   * Permission + File access check.
+   */
+  public function _hax_file_access($op) {
+    // FIXME entity_access bit in next line needs to be updated for D8
+    if (\Drupal::currentUser()->hasPermission('use hax') && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
+      return AccessResult::allowed();
     }
-    return FALSE;
+    return AccessResult::forbidden();
   }
 
+  /**
+   * Save a file to the file system.
+   */
   public function _hax_file_save($token) {
     $status = 403;
     // check for the uploaded file from our 1-page-uploader app
@@ -113,19 +124,45 @@ class DefaultController extends ControllerBase {
     }
   }
 
+
+  /**
+   * Present the node form but wrap the content in hax-body tag
+   * @param  [type] $node [description]
+   * @return [type]       [description]
+   */
   public function _hax_node_form(\Drupal\node\NodeInterface $node) {
     // set page title
-    drupal_set_title(t('HAX edit @title', [
-      '@title' => $node->getTitle()
-      ]), PASS_THROUGH);
+    // @FIXME
+  // drupal_set_title() has been removed. There are now a few ways to set the title
+  // dynamically, depending on the situation.
+  //
+  //
+  // @see https://www.drupal.org/node/2067859
+  // drupal_set_title(t('HAX edit @title', array('@title' => $node->getTitle())), PASS_THROUGH);
+
     // fake a component to get it into the head of the document, heavy weighting
-    $component = new stdClass();
+    $component = new \stdClass();
     $component->machine_name = 'cms-hax';
     // pull in from webcomponents location
-    $component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/cms-hax/cms-hax.html';
-    _webcomponents_add_to_head($component, 10000);
+  // @FIXME
+/* TODO moved this to hax_page_attachments() ... is that working and appropriate?
+//    $component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/cms-hax/cms-hax.html';
+    // Not relying on libraries
+    $component->file = 'libraries/webcomponents/polymer/bower_components/cms-hax/cms-hax.html';
+//    _webcomponents_add_to_head($component, 10000);
+    $element = [
+      '#tag' => 'link', // The #tag is the html tag
+      '#attributes' => [ // Set up an array of attributes inside the tag
+        'href' => base_path() . $component->file,
+        'rel' => 'import',
+      ],
+    ];
+    //drupal_add_html_head($element, 'webcomponent-' . $component->machine_name);
+    $build['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
+*/
+
     // generate autoload list
-    $elementstring = variable_get('hax_autoload_element_list', HAX_DEFAULT_ELEMENTS);
+    $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
     // blow up based on space
     $elements = explode(' ', $elementstring);
     $components = '';
@@ -135,13 +172,24 @@ class DefaultController extends ControllerBase {
         $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
       }
     }
-    $appStoreConnection = [
-      'url' => base_path() . 'hax-app-store/' . drupal_get_token('hax')
-      ];
+    $appStoreConnection = array(
+      'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
+    );
     // write content to screen, wrapped in tag to do all the work
     $content = '
-  <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . drupal_get_token('hax') . '" body-offset-left="' . variable_get('hax_offset_left', 0) . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>' . $components . check_markup($node->body[0]->value, $node->body[0]->format) . '</cms-hax>';
-    return $content;
+    <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+    . $components .
+      check_markup($node->body[0]->value, $node->body[0]->format)
+    .'</cms-hax>';
+
+    // TODO Confirm is fit for purpose (was req'd by controller): return Response object instead of string
+    $response = new \Symfony\Component\HttpFoundation\Response();
+    $response->setContent($content);
+    $response->setMaxAge(1);
+error_log('in hax\DefaultController\_hax_node_form');
+    return $response;
+    //return $content;
   }
+
 
 }

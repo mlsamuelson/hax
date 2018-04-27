@@ -1,29 +1,20 @@
 <?php
 
+// TODO remove?
 include_once 'HAXService.php';
 
 /**
  * @file
- * Headless Authoring eXperience, all we do is accept calls and make things haxable in the first place.
+ * Headless Authoring eXperience, all we do is accept calls and make things
+ *   haxable in the first place.
  */
 
-define('HAX_DEFAULT_ELEMENTS', 'video-player wikipedia-query pdf-element lrn-table media-image');
-
-/**
- * Implements hook_permission().
- */
-function hax_permission() {
-  return array(
-    'use hax' =>  array(
-      'title' => t('Use HAX editor'),
-      'description' => t('Advanced authoring experience that is pulled in from hax capable web components.'),
-    ),
-  );
-}
+//define('HAX_DEFAULT_ELEMENTS', 'video-player wikipedia-query pdf-element lrn-table media-image');
 
 /**
  * Implements hook_menu().
  */
+/*
 function hax_menu() {
   $items['hax-node-save/%node/%'] = array(
     'page callback' => '_hax_node_save',
@@ -66,6 +57,7 @@ function hax_menu() {
   );
   return $items;
 }
+/*
 
 /**
  * Implements hook_node_view().
@@ -74,19 +66,27 @@ function hax_menu() {
 function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
   if ($view_mode == 'full' && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
     // generate autoload list
-    // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/hax.settings.yml and config/schema/hax.schema.yml.
-$elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+    $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
     // blow up based on space
     $elements = explode(' ', $elementstring);
     foreach ($elements as $element) {
       $component = new stdClass();
       $component->machine_name = $element;
       // pull in from webcomponents location
-      $component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/' . $element . '/' . $element . '.html';
-      _webcomponents_add_to_head($component, 10001);
+// @FIXME check fix
+      //$component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/' . $element . '/' . $element . '.html';
+      $component->file = 'libraries/webcomponents/polymer/bower_components/' . $element . '/' . $element . '.html';
+      //_webcomponents_add_to_head($component, 10001);
+      $element = [
+        '#tag' => 'link', // The #tag is the html tag
+        '#attributes' => [ // Set up an array of attributes inside the tag
+          'href' => base_path() . $component->file,
+          'rel' => 'import',
+        ],
+      ];
+      //drupal_add_html_head($element, 'webcomponent-' . $component->machine_name);
+      $build['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
+
     }
   }
 }
@@ -94,6 +94,7 @@ $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list
 /**
  * Callback to save just the body field.
  */
+/*
 function _hax_node_save(\Drupal\node\NodeInterface $node, $token) {
   // ensure we had data PUT here and it is valid
   if ($_SERVER['REQUEST_METHOD'] == 'PUT' && drupal_valid_token($token, 'hax')) {
@@ -118,10 +119,12 @@ function _hax_node_save(\Drupal\node\NodeInterface $node, $token) {
     exit;
   }
 }
+*/
 
 /**
  * Callback to assemble the hax app store
  */
+/*
 function _hax_load_app_store($token) {
   // ensure we had data PUT here and it is valid
   if (drupal_valid_token($token, 'hax')) {
@@ -143,30 +146,36 @@ function _hax_load_app_store($token) {
     exit;
   }
 }
+*/
 
 /**
  * Permission + Node access check.
  */
+/*
 function _hax_node_access($op, \Drupal\node\NodeInterface $node, Drupal\Core\Session\AccountInterface $account) {
   if (\Drupal::currentUser()->hasPermission('use hax') && node_access($op, $node)) {
     return TRUE;
   }
   return FALSE;
 }
+*/
 
 /**
  * Permission + File access check.
  */
+/*
 function _hax_file_access($op, Drupal\Core\Session\AccountInterface $account) {
   if (\Drupal::currentUser()->hasPermission('use hax') && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
     return TRUE;
   }
   return FALSE;
 }
+*/
 
 /**
  * Save a file to the file system.
  */
+/*
 function _hax_file_save($token) {
   $status = 403;
   // check for the uploaded file from our 1-page-uploader app
@@ -206,12 +215,14 @@ function _hax_file_save($token) {
   print drupal_json_output($return);
   exit;
 }
+*/
 
 /**
  * Present the node form but wrap the content in hax-body tag
  * @param  [type] $node [description]
  * @return [type]       [description]
  */
+/*
 function _hax_node_form(\Drupal\node\NodeInterface $node) {
   // set page title
   // @FIXME
@@ -226,14 +237,11 @@ function _hax_node_form(\Drupal\node\NodeInterface $node) {
   $component = new stdClass();
   $component->machine_name = 'cms-hax';
   // pull in from webcomponents location
+// @FIXME
   $component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/cms-hax/cms-hax.html';
   _webcomponents_add_to_head($component, 10000);
   // generate autoload list
-  // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/hax.settings.yml and config/schema/hax.schema.yml.
-$elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+  $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
   // blow up based on space
   $elements = explode(' ', $elementstring);
   $components = '';
@@ -244,20 +252,22 @@ $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list
     }
   }
   $appStoreConnection = array(
-    'url' => base_path() . 'hax-app-store/' . drupal_get_token('hax'),
+    'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
   );
   // write content to screen, wrapped in tag to do all the work
   $content = '
-  <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . drupal_get_token('hax') . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+  <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
   . $components .
     check_markup($node->body[0]->value, $node->body[0]->format)
   .'</cms-hax>';
   return $content;
 }
+*/
 
 /**
  * Helper function to make outline designer settings more obvious.
  */
+/*
 function hax_settings($form, &$form_state) {
   $form['hax_offset_left'] = array(
     '#type' => 'textfield',
@@ -266,11 +276,7 @@ function hax_settings($form, &$form_state) {
     '#description' => t("Helps with theme compatibility when positioning the context menu. Adjust this if HAX context menu doesn't correctly align with the side of your content when editing. Value is in pixels but should not include px. Some themes that mess with box-model may or may not have this issue."),
   );
   // collapse default state
-  // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/hax.settings.yml and config/schema/hax.schema.yml.
-$form['hax_autoload_element_list'] = array(
+  $form['hax_autoload_element_list'] = array(
     '#type' => 'textfield',
     '#title' => t('Elements to autoload'),
     '#default_value' => \Drupal::config('hax.settings')->get('hax_autoload_element_list'),
@@ -294,26 +300,28 @@ $form['hax_autoload_element_list'] = array(
   }
   return system_settings_form($form);
 }
+*/
 
 /**
  * Implements hook_hax_app_store().
  */
 function hax_hax_app_store() {
-  $hax = new HAXService();
+
+  $config = $this->config('hax.settings');
+
+  $hax = new \Drupal\hax\HAXService;
   $apikeys = array();
   $baseApps = $hax->baseSupportedApps();
   foreach ($baseApps as $key => $app) {
-    // @FIXME
-// // @FIXME
-// // The correct configuration object could not be determined. You'll need to
-// // rewrite this call manually.
-// if (variable_get('hax_' . $key . '_key', '') != '') {
-//       $apikeys[$key] = variable_get('hax_' . $key . '_key', '');
-//     }
+
+    if ($config->get('hax_' . $key . '_key') != '') {
+      $apikeys[$key] = $config->get('hax_' . $key . '_key');
+    }
 
   }
   $json = $hax->loadBaseAppStore($apikeys);
   // pull in the core ones we supply
+// @FIXME ??? need changes now that restws is in core?
   if (\Drupal::moduleHandler()->moduleExists('file_entity') && \Drupal::moduleHandler()->moduleExists('restws')) {
     $tmp = json_decode(_hax_site_connection());
     array_push($json, $tmp);
@@ -378,7 +386,7 @@ function _hax_site_connection() {
         },
         "add": {
           "method": "POST",
-          "endPoint": "hax-file-save/' . drupal_get_token('hax') . '",
+          "endPoint": "hax-file-save/' . \Drupal::csrfToken()->get() . '",
           "acceptsGizmoTypes": [
             "image",
             "video",
@@ -402,3 +410,109 @@ function _hax_site_connection() {
   }';
   return $json;
 }
+
+/**
+ * Implements hook_page_attachments().
+ *
+ * Load all attachments for this page.
+ */
+function hax_page_attachments(array &$attachments) {
+  if (!hax_is_current_route_supported()) {
+    return NULL;
+  }
+
+  error_log('in hax_page_attachments');
+
+  // fake a component to get it into the head of the document, heavy weighting
+  $component = new \stdClass();
+  $component->machine_name = 'cms-hax';
+  $component->file = 'libraries/webcomponents/polymer/bower_components/cms-hax/cms-hax.html';
+  $element = [
+    '#tag' => 'link', // The #tag is the html tag
+    '#attributes' => [ // Set up an array of attributes inside the tag
+      'href' => base_path() . $component->file,
+      'rel' => 'import',
+    ],
+  ];
+  $attachments['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
+
+  // TODO do we need the autoload attachments here, too?
+
+  /*
+  $metatag_attachments = &drupal_static('metatag_attachments');
+
+  if (is_null($metatag_attachments)) {
+    // Load the meta tags from the route.
+    $metatag_attachments = metatag_get_tags_from_route();
+  }
+  if (!$metatag_attachments) {
+    return NULL;
+  }
+
+  // If any Metatag items were found, append them.
+  if (!empty($metatag_attachments['#attached']['html_head'])) {
+    if (empty($attachments['#attached'])) {
+      $attachments['#attached'] = [];
+    }
+    if (empty($attachments['#attached']['html_head'])) {
+      $attachments['#attached']['html_head'] = [];
+    }
+
+    $head_links = [];
+    foreach ($metatag_attachments['#attached']['html_head'] as $item) {
+      $attachments['#attached']['html_head'][] = $item;
+
+      // Also add a HTTP header "Link:" for canonical URLs and shortlinks.
+      // See HtmlResponseAttachmentsProcessor::processHtmlHeadLink() for the
+      // implementation of the functionality in core.
+      if (in_array($item[1], ['canonical_url', 'shortlink'])) {
+        $attributes = $item[0]['#attributes'];
+
+        $href = '<' . Html::escape($attributes['href']) . '>';
+        unset($attributes['href']);
+        if ($param = drupal_http_header_attributes($attributes)) {
+          $href .= ';' . $param;
+        }
+        $head_links[] = $href;
+      }
+    }
+
+    // If any HTTP Header items were found, add them too.
+    if (!empty($head_links)) {
+      $attachments['#attached']['http_header'][] = [
+        'Link',
+        implode(', ', $head_links),
+        FALSE,
+      ];
+    }
+  }
+  */
+
+
+}
+
+/**
+ * Identify whether the current route is supported by the module.
+ *
+ * @return bool
+ *   TRUE if the current route is supported.
+ */
+function hax_is_current_route_supported() {
+  /*
+  // If upgrading, we need to wait for database updates to complete.
+  $is_ready = \Drupal::service('entity_type.manager')
+    ->getDefinition('metatag_defaults', FALSE);
+  if (!$is_ready) {
+    return FALSE;
+  }
+
+  // Ignore admin paths.
+  if (\Drupal::service('router.admin_context')->isAdminRoute()) {
+    return FALSE;
+  }
+  */
+
+  return TRUE;
+}
+
+
