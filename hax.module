@@ -11,6 +11,9 @@ include_once 'HAXService.php';
 
 //define('HAX_DEFAULT_ELEMENTS', 'video-player wikipedia-query pdf-element lrn-table media-image');
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+
 /**
  * Implements hook_menu().
  */
@@ -60,20 +63,22 @@ function hax_menu() {
 /*
 
 /**
- * Implements hook_node_view().
+ * Implements hook_ENTITY_TYPE_view().
  */
-//function hax_node_view(array &$build, \Drupal\node\NodeInterface &$build, \Drupal\node\NodeInterface &$build, \Drupal\node\NodeInterface $node, $view_mode, $langcode) {
 function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
+
   if ($view_mode == 'full' && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
+
     // generate autoload list
     $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
     // blow up based on space
     $elements = explode(' ', $elementstring);
+    $components = '';
     foreach ($elements as $element) {
       $component = new stdClass();
       $component->machine_name = $element;
       // pull in from webcomponents location
-// @FIXME check fix
+      // @FIXME check fix
       //$component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/' . $element . '/' . $element . '.html';
       $component->file = 'libraries/webcomponents/polymer/bower_components/' . $element . '/' . $element . '.html';
       //_webcomponents_add_to_head($component, 10001);
@@ -87,9 +92,46 @@ function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entit
       //drupal_add_html_head($element, 'webcomponent-' . $component->machine_name);
       $build['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
 
+      // sanity check
+      if (!empty($element)) {
+        $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
+      }
+
     }
+
+    // TODO Conditionalize? if node/{node}/hax path....
+    // generate autoload list
+    $components = '';
+    foreach ($elements as $element) {
+      // sanity check
+      if (!empty($element)) {
+        $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
+      }
+    }
+    $appStoreConnection = array(
+      'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
+    );
+    // write content to screen, wrapped in tag to do all the work
+    //$content = '
+    //    <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+    //  . $components .
+    //  check_markup($node->body[0]->value, $node->body[0]->format)
+    //  .'</cms-hax>';
+
+    $node = $entity;
+
+    //dpm(array_keys($build['body'][0]['#text']));
+
+    $build['body'][0]['#text'] =  '
+          <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+      . $components .
+      check_markup($node->body[0]->value, $node->body[0]->format)
+      .'</cms-hax>';
+
+
   }
 }
+
 
 /**
  * Callback to save just the body field.
@@ -416,10 +458,13 @@ function _hax_site_connection() {
  *
  * Load all attachments for this page.
  */
+
 function hax_page_attachments(array &$attachments) {
   if (!hax_is_current_route_supported()) {
     return NULL;
   }
+
+  // TODO better handled in the HaxModeContorller::hax_node_form() now?
 
   error_log('in hax_page_attachments');
 
@@ -487,7 +532,6 @@ function hax_page_attachments(array &$attachments) {
     }
   }
   */
-
 
 }
 

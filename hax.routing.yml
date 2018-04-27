@@ -22,8 +22,10 @@ hax.node_form:
   path: '/node/{node}/hax'
   defaults:
     op: update
-    _title: 'HAX mode'
-    _controller: '\Drupal\hax\Controller\DefaultController::_hax_node_form'
+    #_title: 'HAX mode'
+    _title_callback: '\Drupal\hax\Controller\HaxModeController::title'
+    #_controller: '\Drupal\hax\Controller\DefaultController::_hax_node_form'
+    _controller: '\Drupal\hax\Controller\HaxModeController::hax_node_form'
   requirements:
     _custom_access: '\Drupal\hax\Controller\DefaultController::_hax_node_access'
 hax.settings:

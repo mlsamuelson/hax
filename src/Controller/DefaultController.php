@@ -130,36 +130,37 @@ class DefaultController extends ControllerBase {
    * @param  [type] $node [description]
    * @return [type]       [description]
    */
+  /* Was rendering without the page - we needed render WITH the Response object.
+   * See HaxModeController.php and the routing.yml for this, now.
   public function _hax_node_form(\Drupal\node\NodeInterface $node) {
     // set page title
     // @FIXME
-  // drupal_set_title() has been removed. There are now a few ways to set the title
-  // dynamically, depending on the situation.
-  //
-  //
-  // @see https://www.drupal.org/node/2067859
-  // drupal_set_title(t('HAX edit @title', array('@title' => $node->getTitle())), PASS_THROUGH);
+    // drupal_set_title() has been removed. There are now a few ways to set the title
+    // dynamically, depending on the situation.
+    //
+    //
+    // @see https://www.drupal.org/node/2067859
+    // drupal_set_title(t('HAX edit @title', array('@title' => $node->getTitle())), PASS_THROUGH);
 
     // fake a component to get it into the head of the document, heavy weighting
     $component = new \stdClass();
     $component->machine_name = 'cms-hax';
     // pull in from webcomponents location
-  // @FIXME
-/* TODO moved this to hax_page_attachments() ... is that working and appropriate?
-//    $component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/cms-hax/cms-hax.html';
-    // Not relying on libraries
-    $component->file = 'libraries/webcomponents/polymer/bower_components/cms-hax/cms-hax.html';
-//    _webcomponents_add_to_head($component, 10000);
-    $element = [
-      '#tag' => 'link', // The #tag is the html tag
-      '#attributes' => [ // Set up an array of attributes inside the tag
-        'href' => base_path() . $component->file,
-        'rel' => 'import',
-      ],
-    ];
-    //drupal_add_html_head($element, 'webcomponent-' . $component->machine_name);
-    $build['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
-*/
+    // @FIXME
+    // Remove. Moved this to hax_page_attachments() ... is that working and appropriate?
+    ////$component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/cms-hax/cms-hax.html';
+    //// Not relying on libraries
+    //$component->file = 'libraries/webcomponents/polymer/bower_components/cms-hax/cms-hax.html';
+    ////_webcomponents_add_to_head($component, 10000);
+    //$element = [
+    //  '#tag' => 'link', // The #tag is the html tag
+    //  '#attributes' => [ // Set up an array of attributes inside the tag
+    //    'href' => base_path() . $component->file,
+    //    'rel' => 'import',
+    //  ],
+    //];
+    ////drupal_add_html_head($element, 'webcomponent-' . $component->machine_name);
+    //$build['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
 
     // generate autoload list
     $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
@@ -182,14 +183,16 @@ class DefaultController extends ControllerBase {
       check_markup($node->body[0]->value, $node->body[0]->format)
     .'</cms-hax>';
 
+    // TODO how to get the rest of the page?
     // TODO Confirm is fit for purpose (was req'd by controller): return Response object instead of string
     $response = new \Symfony\Component\HttpFoundation\Response();
     $response->setContent($content);
     $response->setMaxAge(1);
-error_log('in hax\DefaultController\_hax_node_form');
     return $response;
+
     //return $content;
   }
+*/
 
 
 }
