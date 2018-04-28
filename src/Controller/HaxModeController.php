@@ -29,10 +29,21 @@ class HaxModeController extends NodeViewController {
 
     $build = parent::view($node, $view_mode, $langcode);
 
+    // TODO NOTES
+    // This method only seems useful for adding attachments, but not for
+    // altering. Much of the contents of $build['#node'] are protected
+    // Is hax_node_view() a better place for altering the node field output?
+    // Or are there other hooks we're missing?
+
+
     // Add HAX components to node.
 
     // Only apply on full view mode.
     if ($build['#view_mode'] == 'full') {
+
+      //dpm($build);
+      //dpm($build['#node']);
+      //dpm($build['#node']->id());
 
       // fake a component to get it into the head of the document, heavy weighting
       $component = new \stdClass();
@@ -51,7 +62,8 @@ class HaxModeController extends NodeViewController {
       ];
 
 
-      /*
+      /* This stuff is being added in hax_node_view().
+
           // generate autoload list
           $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
           // blow up based on space
@@ -73,18 +85,14 @@ class HaxModeController extends NodeViewController {
             check_markup($node->body[0]->value, $node->body[0]->format)
           .'</cms-hax>';
 
-          // TODO how to get the rest of the page?
-
-          // TODO Confirm is fit for purpose (was req'd by controller): return Response object instead of string
           $response = new \Symfony\Component\HttpFoundation\Response();
           $response->setContent($content);
           $response->setMaxAge(1);
-      error_log('in hax\DefaultController\_hax_node_form');
+          error_log('in hax\DefaultController\_hax_node_form');
           return $response;
       */
 
     }
-
 
     return $build;
   }

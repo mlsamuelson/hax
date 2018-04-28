@@ -118,20 +118,34 @@ function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entit
     //  check_markup($node->body[0]->value, $node->body[0]->format)
     //  .'</cms-hax>';
 
-    $node = $entity;
-
     //dpm(array_keys($build['body'][0]['#text']));
 
+    // TODO Getting close, but is rendering as escaped. If one edits the source so it's not escaped, HAX pops up.
+    // TODO This is only working when we have both of the next two code blocks. Not sure why that is, yet.
+
+    $entity->get('body')->set(0, '
+          <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $entity->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+          . $components
+          . check_markup($entity->body[0]->value, $entity->body[0]->format)
+          . '</cms-hax>');
+
+    $build['body'][0]['#text'] =  '
+          <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $entity->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+      . $components .
+      check_markup($entity->body[0]->value, $entity->body[0]->format)
+      .'</cms-hax>';
+
+
+    /*
     $build['body'][0]['#text'] =  '
           <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
       . $components .
       check_markup($node->body[0]->value, $node->body[0]->format)
       .'</cms-hax>';
-
+    */
 
   }
 }
-
 
 /**
  * Callback to save just the body field.
