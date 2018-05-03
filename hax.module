@@ -111,38 +111,18 @@ function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entit
     $appStoreConnection = array(
       'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
     );
-    // write content to screen, wrapped in tag to do all the work
-    //$content = '
-    //    <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
-    //  . $components .
-    //  check_markup($node->body[0]->value, $node->body[0]->format)
-    //  .'</cms-hax>';
 
-    //dpm(array_keys($build['body'][0]['#text']));
-
-    // TODO Getting close, but is rendering as escaped. If one edits the source so it's not escaped, HAX pops up.
-    // TODO This is only working when we have both of the next two code blocks. Not sure why that is, yet.
-
-    $entity->get('body')->set(0, '
-          <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $entity->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
-          . $components
-          . check_markup($entity->body[0]->value, $entity->body[0]->format)
-          . '</cms-hax>');
+    // TODO Tag renders, but you must place
+    // <cms-hax open-default end-point body-offset-left app-store-connection>
+    // into the input format first. Perhaps what we need to do is create our
+    // own input format. Or in the least, this step needs to be in the README.
+    // To be explored...
 
     $build['body'][0]['#text'] =  '
           <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $entity->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
       . $components .
       check_markup($entity->body[0]->value, $entity->body[0]->format)
       .'</cms-hax>';
-
-
-    /*
-    $build['body'][0]['#text'] =  '
-          <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
-      . $components .
-      check_markup($node->body[0]->value, $node->body[0]->format)
-      .'</cms-hax>';
-    */
 
   }
 }
