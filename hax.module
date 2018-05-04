@@ -67,6 +67,13 @@ function hax_menu() {
  */
 function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
 
+  //$route_name = \Drupal::routeMatch()->getRouteName();
+  //if ($route_name == 'hax.node_form' && $view_mode == 'full' && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
+// TODO running into CACHE issues with this when we try to use route... so
+// have copied into HaxModeController::hax_node_form() and are seeing if we can
+// get it to work there - better route dependence from that?
+// We don't want to break the cache in a big bad way.
+return;
   if ($view_mode == 'full' && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
 
     // generate autoload list
@@ -78,10 +85,7 @@ function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entit
       $component = new stdClass();
       $component->machine_name = $element;
       // pull in from webcomponents location
-      // @FIXME check fix
-      //$component->file = libraries_get_path('webcomponents') . '/polymer/bower_components/' . $element . '/' . $element . '.html';
       $component->file = 'libraries/webcomponents/polymer/bower_components/' . $element . '/' . $element . '.html';
-      //_webcomponents_add_to_head($component, 10001);
       $element = [
         '#tag' => 'link', // The #tag is the html tag
         '#attributes' => [ // Set up an array of attributes inside the tag
@@ -89,25 +93,9 @@ function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entit
           'rel' => 'import',
         ],
       ];
-      //drupal_add_html_head($element, 'webcomponent-' . $component->machine_name);
       $build['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
-
-      // sanity check
-      if (!empty($element)) {
-        $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
-      }
-
     }
 
-    // TODO Conditionalize? if node/{node}/hax path....
-    // generate autoload list
-    $components = '';
-    foreach ($elements as $element) {
-      // sanity check
-      if (!empty($element)) {
-        $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
-      }
-    }
     $appStoreConnection = array(
       'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
     );
