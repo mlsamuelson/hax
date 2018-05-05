@@ -29,6 +29,9 @@ class HaxModeController extends NodeViewController {
 
     $build = parent::view($node, $view_mode, $langcode);
 
+// TODO maybe just route to the canonical if we end up not actually using this controller.
+return $build;
+
     // TODO NOTES
     // This method only seems useful for adding attachments, but not for
     // altering. Much of the contents of $build['#node'] are protected

@@ -13,11 +13,12 @@ include_once 'HAXService.php';
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Component\Utility\Xss;
 
 /**
  * Implements hook_menu().
  */
-/*
+/* Keeping here for reference. To be removed.
 function hax_menu() {
   $items['hax-node-save/%node/%'] = array(
     'page callback' => '_hax_node_save',
@@ -60,12 +61,115 @@ function hax_menu() {
   );
   return $items;
 }
-/*
+*/
+
+
+
+/**
+ * Implememts hook_preprocess_hook().
+ *
+ * Add cms-hax tag and related markup as wrapper to body field.
+ */
+function hax_preprocess_field(&$vars) {
+
+  // Supporting attachments handled in hax_page_attachments().
+
+  // Allow for cache variability based on route name so this can be handled
+  // evaluated separately for the view and the hax mode tabs.
+  $vars['#cache']['contexts'][] = 'route.name';
+
+  if (!hax_is_current_route_supported()) {
+    return;
+  }
+
+  $entity_type = $vars['element']['#object']->getEntityTypeId();
+  $bundle = $vars['element']['#object']->bundle();
+  $view_mode = $vars['element']['#view_mode'];
+
+  if ($vars['field_name'] == 'body' && $entity_type == 'node' && $view_mode == 'full'
+    && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
+
+    /* moved to hax_page_attachments().
+    // Generate autoload list.
+    $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+    // Blow up based on space.
+    $elements = explode(' ', $elementstring);
+    $components = '';
+    foreach ($elements as $element) {
+      $component = new \stdClass();
+      $component->machine_name = $element;
+      // Pull in from webcomponents location.
+      $component->file = 'libraries/webcomponents/polymer/bower_components/' . $element . '/' . $element . '.html';
+      $element = [
+        '#tag' => 'link', // The #tag is the html tag
+        '#attributes' => [ // Set up an array of attributes inside the tag
+          'href' => base_path() . $component->file,
+          'rel' => 'import',
+        ],
+      ];
+
+      // Add components to html_head via $vars.
+      $vars['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
+    }
+    */
+
+    // Generate autoload list.
+    $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+    // Blow up based on space.
+    $elements = explode(' ', $elementstring);
+    $components = '';
+    foreach ($elements as $element) {
+      // sanity check
+      if (!empty($element)) {
+        $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
+      }
+    }
+
+    $appStoreConnection = array(
+      'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
+    );
+
+    // Get the NID from current path.
+    $request = \Drupal::request();
+    $current_path = $request->getPathInfo();
+    $path_args = explode('/', $current_path);
+    $node_id = $path_args[2];
+
+    // Add <cms-hax> tag around body markup.
+
+    // TODO DRUPAL is stripping tag in #prefix and #suffix...
+    //$vars['items'][0]['content']['#prefix'] = '
+    //  <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id .  '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+    //  . $components;
+    //$vars['items'][0]['content']['#suffix'] = '</cms-hax>';
+
+    // TODO Another attempt. No way to alter/add to the $adminTags?
+    // see Drupal\Component\Utility\Xss
+    //$vars['items'][0]['content']['#prefix'] = XSS::filterAdmin('
+    //  <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id .  '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+    //  . $components);
+    //$vars['items'][0]['content']['#suffix'] = XSS::filterAdmin('</cms-hax>');
+
+    // TODO Not ideal, but we've fallen back to using the body text instead of
+    // prefix/suffix due to filtering.
+    // TODO NOTE With this approach, we have to have the tag added to the input
+    // format used. Update README.
+    $vars['items'][0]['content']['#text'] = '
+      <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id .  '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+      . $components . $vars['items'][0]['content']['#text'] . '</cms-hax>';
+
+  }
+
+}
 
 /**
  * Implements hook_ENTITY_TYPE_view().
  */
 function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
+
+  // TODO Now doing this work in hax_preprocess_field()... Slated for removal
+  // once we've confirmed that's completely capable.
+  return;
 
   if ($view_mode == 'full' && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
 
@@ -93,9 +197,9 @@ function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entit
       $build['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
 
       // sanity check
-      if (!empty($element)) {
-        $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
-      }
+      //if (!empty($element)) {
+      //  $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
+      //}
 
     }
 
@@ -118,12 +222,17 @@ function hax_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entit
     // own input format. Or in the least, this step needs to be in the README.
     // To be explored...
 
-    $build['body'][0]['#text'] =  '
+    // GETTING STRIPPED
+    $build['body'][0]['#prefix'] =  '
           <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $entity->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
-      . $components .
-      check_markup($entity->body[0]->value, $entity->body[0]->format)
-      .'</cms-hax>';
+      . $components;
+    $build['body'][0]['#suffix'] = '</cms-hax>';
 
+    //$build['body'][0]['#text'] =  '
+    //      <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $entity->id() . '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+    //  . $components .
+    //  check_markup($entity->body[0]->value, $entity->body[0]->format)
+    //  .'</cms-hax>';
   }
 }
 
@@ -454,15 +563,16 @@ function _hax_site_connection() {
  */
 
 function hax_page_attachments(array &$attachments) {
+
+  // Need this to execute on variations of route.name to support view and
+  // hax mode tab variation.
+  $vars['#cache']['contexts'][] = 'route.name';
+
   if (!hax_is_current_route_supported()) {
-    return NULL;
+    return;
   }
 
-  // TODO better handled in the HaxModeContorller::hax_node_form() now?
-
-  error_log('in hax_page_attachments');
-
-  // fake a component to get it into the head of the document, heavy weighting
+  // Fake a component to get it into the head of the document, heavy weighting
   $component = new \stdClass();
   $component->machine_name = 'cms-hax';
   $component->file = 'libraries/webcomponents/polymer/bower_components/cms-hax/cms-hax.html';
@@ -477,80 +587,45 @@ function hax_page_attachments(array &$attachments) {
 
   // TODO do we need the autoload attachments here, too?
 
-  /*
-  $metatag_attachments = &drupal_static('metatag_attachments');
+  // Generate autoload list.
+  $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+  // Blow up based on space.
+  $elements = explode(' ', $elementstring);
+  $components = '';
+  foreach ($elements as $element) {
+    $component = new \stdClass();
+    $component->machine_name = $element;
+    // Pull in from webcomponents location.
+    $component->file = 'libraries/webcomponents/polymer/bower_components/' . $element . '/' . $element . '.html';
+    $element = [
+      '#tag' => 'link', // The #tag is the html tag
+      '#attributes' => [ // Set up an array of attributes inside the tag
+        'href' => base_path() . $component->file,
+        'rel' => 'import',
+      ],
+    ];
 
-  if (is_null($metatag_attachments)) {
-    // Load the meta tags from the route.
-    $metatag_attachments = metatag_get_tags_from_route();
+    // Add components to html_head via $vars.
+    $attachments['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
   }
-  if (!$metatag_attachments) {
-    return NULL;
-  }
-
-  // If any Metatag items were found, append them.
-  if (!empty($metatag_attachments['#attached']['html_head'])) {
-    if (empty($attachments['#attached'])) {
-      $attachments['#attached'] = [];
-    }
-    if (empty($attachments['#attached']['html_head'])) {
-      $attachments['#attached']['html_head'] = [];
-    }
-
-    $head_links = [];
-    foreach ($metatag_attachments['#attached']['html_head'] as $item) {
-      $attachments['#attached']['html_head'][] = $item;
-
-      // Also add a HTTP header "Link:" for canonical URLs and shortlinks.
-      // See HtmlResponseAttachmentsProcessor::processHtmlHeadLink() for the
-      // implementation of the functionality in core.
-      if (in_array($item[1], ['canonical_url', 'shortlink'])) {
-        $attributes = $item[0]['#attributes'];
-
-        $href = '<' . Html::escape($attributes['href']) . '>';
-        unset($attributes['href']);
-        if ($param = drupal_http_header_attributes($attributes)) {
-          $href .= ';' . $param;
-        }
-        $head_links[] = $href;
-      }
-    }
-
-    // If any HTTP Header items were found, add them too.
-    if (!empty($head_links)) {
-      $attachments['#attached']['http_header'][] = [
-        'Link',
-        implode(', ', $head_links),
-        FALSE,
-      ];
-    }
-  }
-  */
 
 }
 
 /**
- * Identify whether the current route is supported by the module.
+ * Identify whether the current route is supported for HAX deployment.
  *
  * @return bool
  *   TRUE if the current route is supported.
  */
 function hax_is_current_route_supported() {
-  /*
-  // If upgrading, we need to wait for database updates to complete.
-  $is_ready = \Drupal::service('entity_type.manager')
-    ->getDefinition('metatag_defaults', FALSE);
-  if (!$is_ready) {
-    return FALSE;
+
+  $route_name = \Drupal::routeMatch()->getRouteName();
+
+  if ($route_name == 'hax.node_form') {
+    return TRUE;
   }
 
-  // Ignore admin paths.
-  if (\Drupal::service('router.admin_context')->isAdminRoute()) {
-    return FALSE;
-  }
-  */
-
-  return TRUE;
+  return FALSE;
 }
 
 
