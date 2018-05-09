@@ -4,6 +4,7 @@ whatever your workflow is. If you don't currently have bower you can get it via
 `npm install -g bower`
 
 ## no Webcomponents installed yet
+
 Create a directory for webcomponents to live in for the system. This is
  recommended from Drupal root as:
 
@@ -20,6 +21,7 @@ Run bower install to get dependencies in place:
 Skip the next heading
 
 ## What if I already had webcomponents?
+
 Go to polymer directory :
 `cd libraries/webcomponents/polymer`
 
@@ -30,12 +32,20 @@ Answer any questions bearing in mind that hax currently is written against
 webcomponentsjs 0.7.x and polymer 1.11.x as of this writing. You will have the
 dependencies needed.
 
+## Gather dependencies
+
+Download the REST UI module: https://www.drupal.org/project/restui
+
 ## Usage
-This should give you the dependencies you need to get going. Enable the module
-and go to the permissions page to ensure uses have the 'use hax' permission
-checked. Once this is checked then people will start to see a 'HAX Authoring'
-local menu item / tab / contextual option show up when they have access to edit
-a node.
+
+This should give you the dependencies you need to get going.
+1. Enable the HAX module and the dependencies it requires.
+2. Visit the config page provided by REST UI and enable the "content" resource
+   with the "PATCH" method, the "json" request format and "cookie" auth. TODO AUTH ????
+3. Go to the permissions page to ensure users have the 'use hax' permission
+   checked. Once this is checked then people will start to see a 'HAX Authoring'
+   local menu item / tab / contextual option show up when they have access to
+   edit a node.
 
 ## Settings
 

@@ -7,6 +7,8 @@ namespace Drupal\hax\Controller;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Controller\ControllerBase;
+//use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Default controller for the hax module.
@@ -17,15 +19,43 @@ class DefaultController extends ControllerBase {
    * Permission + Node access check.
    */
   public function _hax_node_access($op, \Drupal\node\NodeInterface $node) {
+
+
     if (\Drupal::currentUser()->hasPermission('use hax') && node_node_access($node, $op, \Drupal::currentUser())) {
       return AccessResult::allowed();
     }
     return AccessResult::forbidden();
   }
 
+  // TODO Convert this to a REST resource ala ??? Nahh, we want to use PUT.
+  //  https://www.drupal.org/docs/8/api/restful-web-services-api/custom-rest-resources
+
   public function _hax_node_save(\Drupal\node\NodeInterface $node, $token) {
+
+    if ($_SERVER['REQUEST_METHOD'] == 'PUT' && \Drupal::csrfToken()->validate($token)) {
+
+      // We're not using the Drupal entity REST system outright here, as PUT
+      // isn't supported. But we can, ahem, "patch" the behavior in ourselves.
+
+      // Submitted value is right here. BOOM!
+      $data = file_get_contents('php://input');
+
+      $current_format = $node->get('body')->getValue()[0]['format'];
+
+      // TODO Probably want some XSS or sanity checks here... See what node forms do.
+      $node->get('body')->setValue(['value' => $data, 'format' => $current_format]);
+      $node->save();
+
+    }
+
+    // TODO edit the Response object to use the desired messaging (below).
+    $response = new Response;
+    $response->sendHeaders();
+    exit;
+
+    /*
     // ensure we had data PUT here and it is valid
-    if ($_SERVER['REQUEST_METHOD'] == 'PUT' && drupal_valid_token($token, 'hax')) {
+    if ($_SERVER['REQUEST_METHOD'] == 'PUT' && \Drupal::csrfToken()->validate($token)) {
       // load the data from input stream
       $body = file_get_contents("php://input");
       $node->body[0]->value = $body;
@@ -46,6 +76,7 @@ class DefaultController extends ControllerBase {
       print drupal_json_output($return);
       exit;
     }
+    */
   }
 
   /**
@@ -66,7 +97,7 @@ class DefaultController extends ControllerBase {
     $status = 403;
     // check for the uploaded file from our 1-page-uploader app
     // and ensure there are entity permissions to create a file of this type
-    if (drupal_valid_token($token, 'hax') && isset($_FILES['file-upload']) && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
+    if (\Drupal::csrfToken()->validate($token) && isset($_FILES['file-upload']) && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
       $upload = $_FILES['file-upload'];
       // check for a file upload
       if (isset($upload['tmp_name']) && is_uploaded_file($upload['tmp_name'])) {
@@ -104,7 +135,7 @@ class DefaultController extends ControllerBase {
 
   public function _hax_load_app_store($token) {
     // ensure we had data PUT here and it is valid
-    if (drupal_valid_token($token, 'hax')) {
+    if (\Drupal::csrfToken()->validate($token)) {
       $appStore = module_invoke_all('hax_app_store');
       \Drupal::moduleHandler()->alter('hax_app_store', $appStore);
       $staxList = module_invoke_all('hax_stax');

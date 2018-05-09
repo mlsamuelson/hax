@@ -1,5 +1,6 @@
 hax.node_save:
   path: '/hax-node-save/{node}/{token}'
+  methods: [PUT]
   defaults:
     op: update
     _controller: '\Drupal\hax\Controller\DefaultController::_hax_node_save'
