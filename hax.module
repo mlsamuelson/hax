@@ -452,7 +452,7 @@ function hax_settings($form, &$form_state) {
  */
 function hax_hax_app_store() {
 
-  $config = $this->config('hax.settings');
+  $config = \Drupal::config('hax.settings');
 
   $hax = new \Drupal\hax\HAXService;
   $apikeys = array();

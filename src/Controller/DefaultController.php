@@ -8,7 +8,10 @@ namespace Drupal\hax\Controller;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Controller\ControllerBase;
 //use Symfony\Component\HttpFoundation\Request;
+use Drupal\editor\Entity\Editor;
 use Symfony\Component\HttpFoundation\Response;
+use Drupal\Component\Utility\Xss;
+
 
 /**
  * Default controller for the hax module.
@@ -38,45 +41,49 @@ class DefaultController extends ControllerBase {
       // isn't supported. But we can, ahem, "patch" the behavior in ourselves.
 
       // Submitted value is right here. BOOM!
-      $data = file_get_contents('php://input');
+      $body = file_get_contents('php://input');
 
       $current_format = $node->get('body')->getValue()[0]['format'];
 
+      // TODO explore creating our own HAX input format with pre-configed tags.
+
+      //error_log(var_export($body, 1));
+      //error_log(var_export(\Drupal::request()->request, 1));
+      //error_log(var_export(Xss::filter($body, ['p']), 1));
+      //error_log(var_export(EditorXssFilter::filterXss($body, $current_format), 1));
+
+      // TODO use Xss::filter() with allowed tags from current input format???
+      //use Drupal\editor\EditorXssFilter;
+      //use Drupal\filter\FilterFormatInterface;
+      // If uxing Xss::filter... it needs a whitelist of tags...
+      //$node->get('body')->setValue(['value' => Xss::filter($body, ['p']), 'format' => $current_format]);
+
+
       // TODO Probably want some XSS or sanity checks here... See what node forms do.
-      $node->get('body')->setValue(['value' => $data, 'format' => $current_format]);
+      $node->get('body')->setValue(['value' => $body, 'format' => $current_format]);
       $node->save();
 
-    }
-
-    // TODO edit the Response object to use the desired messaging (below).
-    $response = new Response;
-    $response->sendHeaders();
-    exit;
-
-    /*
-    // ensure we had data PUT here and it is valid
-    if ($_SERVER['REQUEST_METHOD'] == 'PUT' && \Drupal::csrfToken()->validate($token)) {
-      // load the data from input stream
-      $body = file_get_contents("php://input");
-      $node->body[0]->value = $body;
-      if (!isset($node->body[0]->format)) {
-        $node->body[0]->format = filter_default_format();
-      }
-      node_save($node);
-      // send back happy headers
-      drupal_add_http_header('Content-Type', 'application/json');
-      // define status
-      drupal_add_http_header('Status', 200);
-      $return = [
+      // Build the response object.
+      $response = new Response;
+      $response->headers->set('Content-Type', 'application/json');
+      $response->setStatusCode(200);
+      $response->setContent(json_encode([
         'status' => 200,
-        'message' => t('Save successful!'),
+        'message' => 'Save successful',
         'data' => $node,
-      ];
-      // output the response as json
-      print drupal_json_output($return);
-      exit;
+      ]));
+      return $response;
     }
-    */
+
+    $response = new Response;
+    $response->headers->set('Content-Type', 'application/json');
+    $response->setStatusCode(403);
+    $response->setContent(json_encode([
+      'status' => 403,
+      'message' => 'Unauthorized',
+      'data' => NULL,
+    ]));
+    return $response;
   }
 
   /**
@@ -95,6 +102,8 @@ class DefaultController extends ControllerBase {
    */
   public function _hax_file_save($token) {
     $status = 403;
+    $return = '';
+
     // check for the uploaded file from our 1-page-uploader app
     // and ensure there are entity permissions to create a file of this type
     if (\Drupal::csrfToken()->validate($token) && isset($_FILES['file-upload']) && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
@@ -120,39 +129,45 @@ class DefaultController extends ControllerBase {
         }
       }
     }
-    // send back happy headers
-    drupal_add_http_header('Content-Type', 'application/json');
-    // define status
-    drupal_add_http_header('Status', 200);
-    $return = [
+
+    // Build the response object.
+    $response = new Response;
+    $response->headers->set('Content-Type', 'application/json');
+    $response->setStatusCode($status);
+    $response->setContent(json_encode([
       'status' => $status,
       'data' => $return,
-    ];
-    // output the response as json
-    print drupal_json_output($return);
-    exit;
+    ]));
+    return $response;
   }
 
   public function _hax_load_app_store($token) {
-    // ensure we had data PUT here and it is valid
+    // Ensure we had data PUT here and it is valid
     if (\Drupal::csrfToken()->validate($token)) {
-      $appStore = module_invoke_all('hax_app_store');
+
+      // Hooks and alters.
+      $appStore = \Drupal::moduleHandler()->invokeAll('hax_app_store');
       \Drupal::moduleHandler()->alter('hax_app_store', $appStore);
-      $staxList = module_invoke_all('hax_stax');
+      $staxList = \Drupal::moduleHandler()->invokeAll('hax_stax');
       \Drupal::moduleHandler()->alter('hax_stax', $staxList);
-      // send back happy headers
-      drupal_add_http_header('Content-Type', 'application/json');
-      // define status
-      drupal_add_http_header('Status', 200);
-      $return = [
+
+      // Send the Response object with Apps and StaxList.
+      $response = new Response;
+      $response->headers->set('Content-Type', 'application/json');
+      $response->setStatusCode(200);
+      $response->setContent(json_encode([
         'status' => 200,
         'apps' => $appStore,
-        'stax' => $staxList,
-      ];
-      // output the response as json
-      print drupal_json_output($return);
-      exit;
+        'stax' => $staxList
+      ]));
+      return $response;
+
     }
+
+    // "Unauthorized" response.
+    $response = new Response;
+    $response->setStatusCode(403);
+    return $response;
   }
 
 
