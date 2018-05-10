@@ -125,7 +125,7 @@ function hax_preprocess_field(&$vars) {
       }
     }
 
-    $appStoreConnection = base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get();
+    $appStoreConnection = json_encode(['url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get()]);
 
     // Get the NID from current path.
     $request = \Drupal::request();
