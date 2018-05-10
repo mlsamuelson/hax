@@ -125,9 +125,7 @@ function hax_preprocess_field(&$vars) {
       }
     }
 
-    $appStoreConnection = array(
-      'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
-    );
+    $appStoreConnection = base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get();
 
     // Get the NID from current path.
     $request = \Drupal::request();
@@ -155,7 +153,7 @@ function hax_preprocess_field(&$vars) {
     // TODO NOTE With this approach, we have to have the tag added to the input
     // format used. Update README.
     $vars['items'][0]['content']['#text'] = '
-      <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id .  '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
+      <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id .  '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . $appStoreConnection . "'" . '>'
       . $components . $vars['items'][0]['content']['#text'] . '</cms-hax>';
 
   }
