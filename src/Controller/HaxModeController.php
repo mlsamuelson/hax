@@ -10,6 +10,8 @@ use Drupal\node\Controller\NodeViewController;
 use Drupal\Core\Access\AccessResult;
 use Symfony\Component\HttpFoundation\Response;
 
+use Drupal\file;
+
 /**
  * Defines a controller to render a single node in HAX Mode.
  */
@@ -107,8 +109,9 @@ class HaxModeController extends NodeViewController {
    * Permission + File access check.
    */
   public function _hax_file_access($op) {
-    // FIXME entity_access bit in next line needs to be updated for D8
-    if (\Drupal::currentUser()->hasPermission('use hax') && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
+    // Ensure there are entity permissions to create a file via HAX.
+    // See https://www.drupal.org/project/hax/issues/2962055#comment-12617576
+    if (\Drupal::currentUser()->hasPermission('use hax') && \Drupal::currentUser()->hasPermission('upload files via hax')) {
       return AccessResult::allowed();
     }
     return AccessResult::forbidden();
@@ -121,10 +124,10 @@ class HaxModeController extends NodeViewController {
     $status = 403;
     $return = '';
 
-    // check for the uploaded file from our 1-page-uploader app
-    // and ensure there are entity permissions to create a file of this type
-    // FIXME entity_access bit in next line needs to be updated for D8
-    if (\Drupal::csrfToken()->validate($token) && isset($_FILES['file-upload']) && entity_access('create', 'file', $_FILES['file-upload']['type'])) {
+    // Check for the uploaded file from our 1-page-uploader app
+    // and ensure there are entity permissions to create a file via HAX.
+    // See https://www.drupal.org/project/hax/issues/2962055#comment-12617576
+    if (\Drupal::csrfToken()->validate($token) && \Drupal::currentUser()->hasPermission('upload files via hax') && isset($_FILES['file-upload'])) {
       $upload = $_FILES['file-upload'];
       // check for a file upload
       if (isset($upload['tmp_name']) && is_uploaded_file($upload['tmp_name'])) {
@@ -140,8 +143,8 @@ class HaxModeController extends NodeViewController {
         }
         // see if Drupal can load from this data source
         if ($file = file_save_data($data, $file_wrapper . '://' . $upload['name'])) {
-          file_save($file);
-          $file->url = file_create_url($file->uri);
+          $file->save();
+          $file->url = file_create_url($file->getFileUri());
           $return = ['file' => $file];
           $status = 200;
         }

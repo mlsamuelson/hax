@@ -88,8 +88,8 @@ function hax_hax_app_store() {
 
   }
   $json = $hax->loadBaseAppStore($apikeys);
-  // pull in the core ones we supply
-  if (\Drupal::moduleHandler()->moduleExists('file_entity') && \Drupal::moduleHandler()->moduleExists('rest')) {
+  // Pull in the core ones we supply.
+  if (\Drupal::moduleHandler()->moduleExists('file')) {
     $tmp = json_decode(_hax_site_connection());
     array_push($json, $tmp);
   }

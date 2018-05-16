@@ -1,3 +1,6 @@
 'use hax':
   title: 'Use HAX editor'
   description: 'Advanced authoring experience that is pulled in from hax capable web components.'
+'upload files via hax':
+  title: 'Upload files via HAX editor'
+  description: 'Allow HAX users to upload files'
