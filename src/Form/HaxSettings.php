@@ -6,6 +6,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 use Drupal\hax\HaxService;
 
 /**
@@ -72,10 +73,8 @@ class HaxSettings extends ConfigFormBase {
           '@name' => $app['name'],
         ]),
         '#default_value' => $config->get('hax_' . $key . '_key'),
-        '#description' => $this->t('See @description for details.', [
-          // @todo: Link::fromTextAndUrl is missing a required parameter.
-          '@description' => Link::fromTextAndUrl($this->t('@name developer docs', ['@name' => $app['name']])),
-        ]),
+        '#description' => Link::fromTextAndUrl($this->t('See @name developer docs',
+          ['@name' => $app['name']]), Url::fromUri($app['docs'])),
       ];
     }
 
