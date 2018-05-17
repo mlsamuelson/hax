@@ -42,13 +42,7 @@ class HaxModeController extends NodeViewController {
   }
 
   /**
-   * The _title_callback for the page that renders a single node.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $node
-   *   The current node.
-   *
-   * @return string
-   *   The page title.
+   * {@inheritdoc}
    */
   public function title(EntityInterface $node) {
     // TODO Doesn't appear to be working, but shows up in router. What gives?
