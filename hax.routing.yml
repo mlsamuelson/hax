@@ -24,7 +24,7 @@ hax.node_form:
   defaults:
     op: update
     _title_callback: '\Drupal\hax\Controller\HaxController::title'
-    _controller: '\Drupal\hax\Controller\HaxController::haxNodeForm'
+    _controller: '\Drupal\hax\Controller\HaxController::form'
   requirements:
     _custom_access: '\Drupal\hax\Controller\HaxController::access'
 hax.settings:

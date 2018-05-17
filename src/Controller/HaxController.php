@@ -24,6 +24,34 @@ class HaxController extends NodeViewController {
   }
 
   /**
+   * Hax node edit form.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $node
+   *   The node.
+   * @param string $view_mode
+   *   The node's view mode.
+   * @param null $langcode
+   *   The node's langcode.
+   *
+   * @return array
+   *   The node's view render array.
+   *
+   * @todo: There's a good chance this logic isn't invoked.
+   */
+  public function form(EntityInterface $node, $view_mode = 'full', $langcode = NULL) {
+    // Based on NodeViewController's view() method.
+    $build = parent::view($node, $view_mode, $langcode);
+
+    // This method only seems useful for adding attachments, but not for
+    // altering. Much of the contents of $build['#node'] are protected
+    // Is hax_node_view() a better place for altering the node field output?
+    // Or are there other hooks we're missing?
+    // TODO maybe just route to the canonical if we end up not actually using
+    // this controller.
+    return $build;
+  }
+
+  /**
    * Permission + Node access check.
    *
    * @param mixed $op
