@@ -1,26 +1,44 @@
-<?php /**
- * @file
- * Contains \Drupal\hax\Controller\HaxModeController.
- */
+<?php
 
 namespace Drupal\hax\Controller;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\node\Controller\NodeViewController;
-use Drupal\Core\Access\AccessResult;
+use Drupal\node\NodeInterface;
 use Symfony\Component\HttpFoundation\Response;
-
-use Drupal\file;
 
 /**
  * Defines a controller to render a single node in HAX Mode.
  */
-class HaxModeController extends NodeViewController {
+class HaxController extends NodeViewController {
 
   /**
    * {@inheritdoc}
    */
-  public function hax_node_form(EntityInterface $node, $view_mode = 'full', $langcode = NULL) {
+  public function title(EntityInterface $node) {
+    // TODO Doesn't appear to be working, but shows up in router. What gives?
+    return t("HAX edit @label", [
+      '@label' => $this->entityManager->getTranslationFromContext($node)->label(),
+    ]);
+  }
+
+  /**
+   * Hax node edit form.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $node
+   *   The node.
+   * @param string $view_mode
+   *   The node's view mode.
+   * @param null $langcode
+   *   The node's langcode.
+   *
+   * @return array
+   *   The node's view render array.
+   *
+   * @todo: There's a good chance this logic isn't invoked.
+   */
+  public function form(EntityInterface $node, $view_mode = 'full', $langcode = NULL) {
     // Based on NodeViewController's view() method.
     $build = parent::view($node, $view_mode, $langcode);
 
@@ -28,31 +46,23 @@ class HaxModeController extends NodeViewController {
     // altering. Much of the contents of $build['#node'] are protected
     // Is hax_node_view() a better place for altering the node field output?
     // Or are there other hooks we're missing?
-
-    // TODO maybe just route to the canonical if we end up not actually using this controller.
+    // TODO maybe just route to the canonical if we end up not actually using
+    // this controller.
     return $build;
   }
 
   /**
-   * The _title_callback for the page that renders a single node.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $node
-   *   The current node.
-   *
-   * @return string
-   *   The page title.
-   */
-  public function title(EntityInterface $node) {
-    // TODO Doesn't appear to be working, but shows up in router. What gives?
-    return t("HAX edit ") . $this->entityManager->getTranslationFromContext($node)->label();
-  }
-
-
-  /**
    * Permission + Node access check.
+   *
+   * @param mixed $op
+   *   The operation.
+   * @param \Drupal\node\NodeInterface $node
+   *   The node.
+   *
+   * @return \Drupal\Core\Access\AccessResultAllowed|\Drupal\Core\Access\AccessResultForbidden
+   *   Either allowed or forbidden access response.
    */
-  public function _hax_node_access($op, \Drupal\node\NodeInterface $node) {
-
+  public function access($op, NodeInterface $node) {
 
     if (\Drupal::currentUser()->hasPermission('use hax') && node_node_access($node, $op, \Drupal::currentUser())) {
       return AccessResult::allowed();
@@ -60,13 +70,28 @@ class HaxModeController extends NodeViewController {
     return AccessResult::forbidden();
   }
 
-  public function _hax_node_save(\Drupal\node\NodeInterface $node, $token) {
+  /**
+   * Custom node save logic for hax.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The hax node.
+   * @param mixed $token
+   *   A token.
+   *
+   * @return \Symfony\Component\HttpFoundation\Response
+   *   The http response.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
+   */
+  public function save(NodeInterface $node, $token) {
 
-    if ($_SERVER['REQUEST_METHOD'] == 'PUT' && \Drupal::csrfToken()->validate($token)) {
+    if (
+      $_SERVER['REQUEST_METHOD'] == 'PUT' &&
+      \Drupal::csrfToken()->validate($token)) {
 
       // We're not using the Drupal entity REST system outright here, as PUT
       // isn't supported. But we can, ahem, "patch" the behavior in ourselves.
-
       // HAX submitted value is right here.
       $body = file_get_contents('php://input');
 
@@ -77,13 +102,15 @@ class HaxModeController extends NodeViewController {
 
       // TODO Should we leverage the Text Editor API ?
       // https://www.drupal.org/docs/8/api/text-editor-api/overview
-
       // TODO Any santization or security checks on $body?
-      $node->get('body')->setValue(['value' => $body, 'format' => $current_format]);
+      $node->get('body')->setValue([
+        'value' => $body,
+        'format' => $current_format,
+      ]);
       $node->save();
 
       // Build the response object.
-      $response = new Response;
+      $response = new Response();
       $response->headers->set('Content-Type', 'application/json');
       $response->setStatusCode(200);
       $response->setContent(json_encode([
@@ -94,7 +121,7 @@ class HaxModeController extends NodeViewController {
       return $response;
     }
 
-    $response = new Response;
+    $response = new Response();
     $response->headers->set('Content-Type', 'application/json');
     $response->setStatusCode(403);
     $response->setContent(json_encode([
@@ -107,11 +134,20 @@ class HaxModeController extends NodeViewController {
 
   /**
    * Permission + File access check.
+   *
+   * @param mixed $op
+   *   The operation?
+   *
+   * @return \Drupal\Core\Access\AccessResultAllowed|\Drupal\Core\Access\AccessResultForbidden
+   *   Whether the file access is allowed or forbidden.
+   *
+   * @todo: param does not appear to be used.  Remove?
    */
-  public function _hax_file_access($op) {
+  public function fileAccess($op) {
     // Ensure there are entity permissions to create a file via HAX.
     // See https://www.drupal.org/project/hax/issues/2962055#comment-12617576
-    if (\Drupal::currentUser()->hasPermission('use hax') && \Drupal::currentUser()->hasPermission('upload files via hax')) {
+    if (\Drupal::currentUser()->hasPermission('use hax') &&
+      \Drupal::currentUser()->hasPermission('upload files via hax')) {
       return AccessResult::allowed();
     }
     return AccessResult::forbidden();
@@ -119,29 +155,40 @@ class HaxModeController extends NodeViewController {
 
   /**
    * Save a file to the file system.
+   *
+   * @param mixed $token
+   *   Is this a token object?
+   *
+   * @return \Symfony\Component\HttpFoundation\Response
+   *   The http response.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   *
+   * @todo: Update data type for token.
    */
-  public function _hax_file_save($token) {
+  public function fileSave($token) {
     $status = 403;
     $return = '';
 
     // Check for the uploaded file from our 1-page-uploader app
     // and ensure there are entity permissions to create a file via HAX.
-    // See https://www.drupal.org/project/hax/issues/2962055#comment-12617576
-    if (\Drupal::csrfToken()->validate($token) && \Drupal::currentUser()->hasPermission('upload files via hax') && isset($_FILES['file-upload'])) {
+    // See https://www.drupal.org/project/hax/issues/2962055#comment-12617576.
+    if (\Drupal::csrfToken()->validate($token) &&
+      \Drupal::currentUser()->hasPermission('upload files via hax') && isset($_FILES['file-upload'])) {
       $upload = $_FILES['file-upload'];
-      // check for a file upload
+      // Check for a file upload.
       if (isset($upload['tmp_name']) && is_uploaded_file($upload['tmp_name'])) {
-        // get contents of the file if it was uploaded into a variable
+        // Get contents of the file if it was uploaded into a variable.
         $data = file_get_contents($upload['tmp_name']);
         $params = filter_var_array($_GET, FILTER_SANITIZE_STRING);
-        // see if we had a file_wrapper defined, otherwise this is public
+        // See if we had a file_wrapper defined, otherwise this is public.
         if (isset($params['file_wrapper'])) {
           $file_wrapper = $params['file_wrapper'];
         }
         else {
           $file_wrapper = 'public';
         }
-        // see if Drupal can load from this data source
+        // See if Drupal can load from this data source.
         if ($file = file_save_data($data, $file_wrapper . '://' . $upload['name'])) {
           $file->save();
           $file->url = file_create_url($file->getFileUri());
@@ -152,7 +199,7 @@ class HaxModeController extends NodeViewController {
     }
 
     // Build the response object.
-    $response = new Response;
+    $response = new Response();
     $response->headers->set('Content-Type', 'application/json');
     $response->setStatusCode($status);
     $response->setContent(json_encode([
@@ -162,8 +209,17 @@ class HaxModeController extends NodeViewController {
     return $response;
   }
 
-  public function _hax_load_app_store($token) {
-    // Ensure we had data PUT here and it is valid
+  /**
+   * Load app store.
+   *
+   * @param mixed $token
+   *   The app store token.
+   *
+   * @return \Symfony\Component\HttpFoundation\Response
+   *   The http response.
+   */
+  public function loadAppStore($token) {
+    // Ensure we had data PUT here and it is valid.
     if (\Drupal::csrfToken()->validate($token)) {
 
       // Hooks and alters.
@@ -173,21 +229,22 @@ class HaxModeController extends NodeViewController {
       \Drupal::moduleHandler()->alter('hax_stax', $staxList);
 
       // Send the Response object with Apps and StaxList.
-      $response = new Response;
+      $response = new Response();
       $response->headers->set('Content-Type', 'application/json');
       $response->setStatusCode(200);
       $response->setContent(json_encode([
         'status' => 200,
         'apps' => $appStore,
-        'stax' => $staxList
+        'stax' => $staxList,
       ]));
-      return $response;
 
+      return $response;
     }
 
     // "Unauthorized" response.
-    $response = new Response;
+    $response = new Response();
     $response->setStatusCode(403);
+
     return $response;
   }
 

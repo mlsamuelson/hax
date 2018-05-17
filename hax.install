@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Hax install hooks.
+ */
+
+/**
  * Implements hook_install().
  */
 function hax_install() {

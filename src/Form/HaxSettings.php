@@ -1,18 +1,18 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\hax\Form\HaxSettings.
- */
-
 namespace Drupal\hax\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Render\Element;
 use Drupal\Core\Link;
-use Drupal\Core\Url;
+use Drupal\Core\Render\Element;
+use Drupal\hax\HaxService;
 
+/**
+ * Class HaxSettings.
+ *
+ * @package Drupal\hax\Form
+ */
 class HaxSettings extends ConfigFormBase {
 
   /**
@@ -43,47 +43,50 @@ class HaxSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  protected function getEditableConfigNames() {
-    return ['hax.settings'];
-  }
-
-  public function buildForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
 
     $config = $this->config('hax.settings');
 
     $form['hax_offset_left'] = [
       '#type' => 'textfield',
-      '#title' => t('Offset'),
+      '#title' => $this->t('Offset'),
       '#default_value' => $config->get('hax_offset_left'),
-      '#description' => t("Helps with theme compatibility when positioning the context menu. Adjust this if HAX context menu doesn't correctly align with the side of your content when editing. Value is in pixels but should not include px. Some themes that mess with box-model may or may not have this issue."),
+      '#description' => $this->t("Helps with theme compatibility when positioning the context menu. Adjust this if HAX context menu doesn't correctly align with the side of your content when editing. Value is in pixels but should not include px. Some themes that mess with box-model may or may not have this issue."),
     ];
-    // collapse default state
+
+    // Collapse default state.
     $form['hax_autoload_element_list'] = [
       '#type' => 'textfield',
-      '#title' => t('Elements to autoload'),
+      '#title' => $this->t('Elements to autoload'),
       '#default_value' => $config->get('hax_autoload_element_list'),
       '#maxlength' => 1000,
-      '#description' => t("This allows for auto-loading elements known to play nice with HAX. If you've written any webcomponents that won't automatically be loaded into the page via that module this allows you to attempt to auto-load them when HAX loads. For example, if you have a video-player element in your bower_components directory and want it to load on this interface, this would be a simple way to do that. Spaces only between elements, no comma"),
+      '#description' => $this->t("This allows for auto-loading elements known to play nice with HAX. If you've written any webcomponents that won't automatically be loaded into the page via that module this allows you to attempt to auto-load them when HAX loads. For example, if you have a video-player element in your bower_components directory and want it to load on this interface, this would be a simple way to do that. Spaces only between elements, no comma"),
     ];
 
-
-    $hax = new \Drupal\hax\HAXService;
+    $hax = new HaxService();
     $baseApps = $hax->baseSupportedApps();
     foreach ($baseApps as $key => $app) {
       $form['hax_' . $key . '_key'] = [
         '#type' => 'textfield',
-        '#title' => t('@name API key', [
-          '@name' => $app['name']
-          ]),
+        '#title' => $this->t('@name API key', [
+          '@name' => $app['name'],
+        ]),
         '#default_value' => $config->get('hax_' . $key . '_key'),
-        '#description' => t('See') . ' ' . Link::fromTextAndUrl(t('@name developer docs', [
-          '@name' => $app['name']
-          ]), Url::fromUri($app['docs']))->toString() . ' ' . t('for details'),
+        '#description' => $this->t('See @description for details.', [
+          // @todo: Link::fromTextAndUrl is missing a required parameter.
+          '@description' => Link::fromTextAndUrl($this->t('@name developer docs', ['@name' => $app['name']])),
+        ]),
       ];
     }
 
     return parent::buildForm($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEditableConfigNames() {
+    return ['hax.settings'];
+  }
+
 }
-?>
