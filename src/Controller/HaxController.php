@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Defines a controller to render a single node in HAX Mode.
  */
-class HaxModeController extends NodeViewController {
+class HaxController extends NodeViewController {
 
   /**
    * Hax node edit form.

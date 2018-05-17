@@ -3,30 +3,30 @@ hax.node_save:
   methods: [PUT]
   defaults:
     op: update
-    _controller: '\Drupal\hax\Controller\HaxModeController::haxNodeSave'
+    _controller: '\Drupal\hax\Controller\HaxController::haxNodeSave'
   requirements:
-    _custom_access: '\Drupal\hax\Controller\HaxModeController::haxNodeAccess'
+    _custom_access: '\Drupal\hax\Controller\HaxController::haxNodeAccess'
 hax.file_save:
   path: '/hax-file-save/{token}'
   defaults:
     op: create
-    _controller: '\Drupal\hax\Controller\HaxModeController::haxFileSave'
+    _controller: '\Drupal\hax\Controller\HaxController::haxFileSave'
   requirements:
-    _custom_access: '\Drupal\hax\Controller\HaxModeController::haxFileAccess'
+    _custom_access: '\Drupal\hax\Controller\HaxController::haxFileAccess'
 hax.load_app_store:
   path: '/hax-app-store/{token}'
   defaults:
-    _controller: '\Drupal\hax\Controller\HaxModeController::haxLoadAppStore'
+    _controller: '\Drupal\hax\Controller\HaxController::haxLoadAppStore'
   requirements:
     _permission: 'use hax'
 hax.node_form:
   path: '/node/{node}/hax'
   defaults:
     op: update
-    _title_callback: '\Drupal\hax\Controller\HaxModeController::title'
-    _controller: '\Drupal\hax\Controller\HaxModeController::haxNodeForm'
+    _title_callback: '\Drupal\hax\Controller\HaxController::title'
+    _controller: '\Drupal\hax\Controller\HaxController::haxNodeForm'
   requirements:
-    _custom_access: '\Drupal\hax\Controller\HaxModeController::haxNodeAccess'
+    _custom_access: '\Drupal\hax\Controller\HaxController::haxNodeAccess'
 hax.settings:
   path: /admin/config/content/hax
   defaults:
