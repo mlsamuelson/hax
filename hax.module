@@ -2,9 +2,10 @@
 
 /**
  * @file
- * Headless Authoring eXperience, all we do is accept calls and make things
- *   haxable in the first place.
+ * Headless Authoring eXperience, accept calls and make things haxable.
  */
+
+use Drupal\hax\HaxService;
 
 /**
  * Implememts hook_preprocess_hook().
@@ -14,7 +15,6 @@
 function hax_preprocess_field(&$vars) {
 
   // Supporting attachments handled in hax_page_attachments().
-
   // Allow for cache variability based on route name so this can be handled
   // evaluated separately for the view and the hax mode tabs.
   $vars['#cache']['contexts'][] = 'route.name';
@@ -24,25 +24,26 @@ function hax_preprocess_field(&$vars) {
   }
 
   $entity_type = $vars['element']['#object']->getEntityTypeId();
-  $bundle = $vars['element']['#object']->bundle();
   $view_mode = $vars['element']['#view_mode'];
 
   if ($vars['field_name'] == 'body' && $entity_type == 'node' && $view_mode == 'full'
     && \Drupal::config('hax.settings')->get('hax_autoload_element_node_view')) {
 
     // Generate autoload list.
-    $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+    $elementstring = \Drupal::config('hax.settings')
+      ->get('hax_autoload_element_list');
     // Blow up based on space.
     $elements = explode(' ', $elementstring);
     $components = '';
     foreach ($elements as $element) {
-      // sanity check
       if (!empty($element)) {
         $components .= '<' . $element . ' slot="autoloader">' . '</' . $element . '>';
       }
     }
 
-    $appStoreConnection = json_encode(['url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get()]);
+    $appStoreConnection = json_encode([
+      'url' => base_path() . 'hax-app-store/' . \Drupal::csrfToken()->get(),
+    ]);
 
     // Get the NID from current path.
     $request = \Drupal::request();
@@ -50,20 +51,13 @@ function hax_preprocess_field(&$vars) {
     $path_args = explode('/', $current_path);
     $node_id = $path_args[2];
 
-    // Add <cms-hax> tag around body markup.
-
-    // DRUPAL is stripping tag in #prefix and #suffix...
-    // see Drupal\Component\Utility\Xss
-    //$vars['items'][0]['content']['#prefix'] = '
-    //  <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id .  '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . json_encode($appStoreConnection) . "'" . '>'
-    //  . $components;
-    //$vars['items'][0]['content']['#suffix'] = '</cms-hax>';
-
     // TODO Not ideal, but we've fallen back to using the body text instead of
     // prefix/suffix due to filtering. This will go through the node's selected
     // text format for render.
-    $vars['items'][0]['content']['#text'] = '
-      <cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id .  '/' . \Drupal::csrfToken()->get() . '" body-offset-left="' . \Drupal::config('hax.settings')->get('hax_offset_left') . '" app-store-connection=' . "'" . $appStoreConnection . "'" . '>'
+    // @todo: convert to string replacement function or template.
+    $vars['items'][0]['content']['#text'] = '<cms-hax open-default end-point="' . base_path() . 'hax-node-save/' . $node_id . '/' . \Drupal::csrfToken()
+        ->get() . '" body-offset-left="' . \Drupal::config('hax.settings')
+        ->get('hax_offset_left') . '" app-store-connection=' . "'" . $appStoreConnection . "'" . '>'
       . $components . $vars['items'][0]['content']['#text'] . '</cms-hax>';
 
   }
@@ -77,8 +71,8 @@ function hax_hax_app_store() {
 
   $config = \Drupal::config('hax.settings');
 
-  $hax = new \Drupal\hax\HAXService;
-  $apikeys = array();
+  $hax = new HaxService();
+  $apikeys = [];
   $baseApps = $hax->baseSupportedApps();
   foreach ($baseApps as $key => $app) {
 
@@ -97,17 +91,19 @@ function hax_hax_app_store() {
 }
 
 /**
- * Connection details for this site. This is where
- * all the really important stuff is that will
- * make people freak out.
+ * Hax site connection.
+ *
+ * Connection details for this site. This is where all the really important
+ * stuff is that will make people freak out.
  */
 function _hax_site_connection() {
   global $base_url;
   $parts = explode('://', $base_url);
-  // built in support when file_entity and restws is in place
+  // Built in support when file_entity and restws is in place.
+  $title = t('Internal files');
   $json = '{
     "details": {
-      "title": "' . t('Internal files') . '",
+      "title": "' . $title . '",
       "icon": "perm-media",
       "color": "light-blue",
       "author": "Drupal",
@@ -183,52 +179,65 @@ function _hax_site_connection() {
  *
  * Load all attachments for this page.
  */
-
 function hax_page_attachments(array &$attachments) {
 
   // Need this to execute on variations of route.name to support view and
   // hax mode tab variation.
+  // @todo: As written, this code has no impact.  Need to impact $attachments.
   $vars['#cache']['contexts'][] = 'route.name';
 
   if (!hax_is_current_route_supported()) {
     return;
   }
 
-  // Fake a component to get it into the head of the document, heavy weighting
+  // Fake a component to get it into the head of the document, heavy weighting.
   $component = new \stdClass();
   $component->machine_name = 'cms-hax';
   $component->file = 'libraries/webcomponents/polymer/bower_components/cms-hax/cms-hax.html';
+
+  // The #tag is the html tag.
+  // Set up an array of attributes inside the tag.
   $element = [
-    '#tag' => 'link', // The #tag is the html tag
-    '#attributes' => [ // Set up an array of attributes inside the tag
+    '#tag' => 'link',
+    '#attributes' => [
       'href' => base_path() . $component->file,
       'rel' => 'import',
     ],
   ];
-  $attachments['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
+  $attachments['#attached']['html_head'][] = [
+    $element,
+    'webcomponent-' . $component->machine_name,
+  ];
 
   // TODO do we need the autoload attachments here, too?
-
   // Generate autoload list.
-  $elementstring = \Drupal::config('hax.settings')->get('hax_autoload_element_list');
+  $element_string = \Drupal::config('hax.settings')
+    ->get('hax_autoload_element_list');
+
   // Blow up based on space.
-  $elements = explode(' ', $elementstring);
-  $components = '';
+  $elements = explode(' ', $element_string);
+
   foreach ($elements as $element) {
     $component = new \stdClass();
     $component->machine_name = $element;
     // Pull in from webcomponents location.
     $component->file = 'libraries/webcomponents/polymer/bower_components/' . $element . '/' . $element . '.html';
+
+    // The #tag is the html tag.
+    // Set up an array of attributes inside the tag.
     $element = [
-      '#tag' => 'link', // The #tag is the html tag
-      '#attributes' => [ // Set up an array of attributes inside the tag
+      '#tag' => 'link',
+      '#attributes' => [
         'href' => base_path() . $component->file,
         'rel' => 'import',
       ],
     ];
 
     // Add components to html_head via $vars.
-    $attachments['#attached']['html_head'][] = [$element, 'webcomponent-' . $component->machine_name];
+    $attachments['#attached']['html_head'][] = [
+      $element,
+      'webcomponent-' . $component->machine_name,
+    ];
   }
 
 }
@@ -249,5 +258,3 @@ function hax_is_current_route_supported() {
 
   return FALSE;
 }
-
-

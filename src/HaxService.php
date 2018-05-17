@@ -1,20 +1,30 @@
 <?php
+
 namespace Drupal\hax;
 
-class HAXService {
+/**
+ * Class HaxService.
+ *
+ * @package Drupal\hax
+ */
+class HaxService {
 
   /**
-   * returns an array of app store definitions based
-   * on passing in the apikeys for the ones we have
-   * baked in support for.
-   * @param  array $apikeys  array of API keys per service
-   * @return array           HAX appstore specification
+   * Load app store.
+   *
+   * @param array $api_keys
+   *   Array of API keys per service.
+   *
+   * @return array
+   *   An array of app store definitions based on passing in the api keys for
+   *   the ones we have baked in support for.
    */
-  public function loadBaseAppStore($apikeys = array()) {
-    $json = array();
-    // youtube
-    if (isset($apikeys['youtube'])) {
-      $jsonstring = '{
+  public function loadBaseAppStore(array $api_keys = []) {
+    $json = [];
+
+    // YouTube.
+    if (isset($api_keys['youtube'])) {
+      $json_string = '{
         "details": {
           "title": "Youtube",
           "icon": "av:play-arrow",
@@ -28,7 +38,7 @@ class HAXService {
             "protocol": "https",
             "url": "www.googleapis.com/youtube/v3",
             "data": {
-              "key": "' . $apikeys['youtube'] . '"
+              "key": "' . $api_keys['youtube'] . '"
             },
             "operations": {
               "browse": {
@@ -78,12 +88,13 @@ class HAXService {
             }
         }
       }';
-      $tmp = json_decode($jsonstring);
+      $tmp = json_decode($json_string);
       array_push($json, $tmp);
     }
-    // memegenerator
-    if (isset($apikeys['memegenerator'])) {
-      $jsonstring = '{
+
+    // Meme Generator.
+    if (isset($api_keys['memegenerator'])) {
+      $json_string = '{
         "details": {
           "title": "Meme generator",
           "icon": "android",
@@ -97,7 +108,7 @@ class HAXService {
           "protocol": "http",
           "url": "version1.api.memegenerator.net",
           "data": {
-            "apiKey": "' . $apikeys['memegenerator'] . '"
+            "apiKey": "' . $api_keys['memegenerator'] . '"
           },
           "operations": {
             "browse": {
@@ -140,12 +151,13 @@ class HAXService {
           }
         }
       }';
-      $tmp = json_decode($jsonstring);
+      $tmp = json_decode($json_string);
       array_push($json, $tmp);
     }
-    // vimeo
-    if (isset($apikeys['vimeo'])) {
-      $jsonstring = '{
+
+    // Vimeo.
+    if (isset($api_keys['vimeo'])) {
+      $json_string = '{
         "details": {
           "title": "Vimeo",
           "icon": "av:play-circle-filled",
@@ -159,7 +171,7 @@ class HAXService {
           "protocol": "https",
           "url": "api.vimeo.com",
           "data": {
-            "access_token": "' . $apikeys['vimeo'] . '"
+            "access_token": "' . $api_keys['vimeo'] . '"
           },
           "operations": {
             "browse": {
@@ -208,12 +220,13 @@ class HAXService {
           }
         }
       }';
-      $tmp = json_decode($jsonstring);
+      $tmp = json_decode($json_string);
       array_push($json, $tmp);
     }
-    // giphy
-    if (isset($apikeys['giphy'])) {
-      $jsonstring = '{
+
+    // Giphy.
+    if (isset($api_keys['giphy'])) {
+      $json_string = '{
         "details": {
           "title": "Giphy",
           "icon": "gif",
@@ -227,7 +240,7 @@ class HAXService {
           "protocol": "https",
           "url": "api.giphy.com",
           "data": {
-            "api_key": "' . $apikeys['giphy'] . '"
+            "api_key": "' . $api_keys['giphy'] . '"
           },
           "operations": {
             "browse": {
@@ -290,12 +303,13 @@ class HAXService {
           }
         }
       }';
-      $tmp = json_decode($jsonstring);
+      $tmp = json_decode($json_string);
       array_push($json, $tmp);
     }
-    // unsplash
-    if (isset($apikeys['unsplash'])) {
-      $jsonstring = '{
+
+    // Unsplash.
+    if (isset($api_keys['unsplash'])) {
+      $json_string = '{
         "details": {
           "title": "Unsplash",
           "icon": "image:collections",
@@ -309,7 +323,7 @@ class HAXService {
           "protocol": "https",
           "url": "api.unsplash.com",
           "data": {
-            "client_id": "' . $apikeys['unsplash'] . '"
+            "client_id": "' . $api_keys['unsplash'] . '"
           },
           "operations": {
             "browse": {
@@ -353,12 +367,13 @@ class HAXService {
           }
         }
       }';
-      $tmp = json_decode($jsonstring);
+      $tmp = json_decode($json_string);
       array_push($json, $tmp);
     }
-    // flickr
-    if (isset($apikeys['flickr'])) {
-      $jsonstring = '{
+
+    // Flickr.
+    if (isset($api_keys['flickr'])) {
+      $json_string = '{
         "details": {
           "title": "Flickr",
           "icon": "image:collections",
@@ -373,7 +388,7 @@ class HAXService {
           "protocol": "https",
           "url": "api.flickr.com",
           "data": {
-            "api_key": "' . $apikeys['flickr'] . '"
+            "api_key": "' . $api_keys['flickr'] . '"
           },
           "operations": {
             "browse": {
@@ -440,12 +455,13 @@ class HAXService {
           }
         }
       }';
-      $tmp = json_decode($jsonstring);
+      $tmp = json_decode($json_string);
       array_push($json, $tmp);
     }
-    // pixabay
-    if (isset($apikeys['pixabay'])) {
-      $jsonstring = '{
+
+    // Pixabay.
+    if (isset($api_keys['pixabay'])) {
+      $json_string = '{
         "details": {
           "title": "Pixabay images",
           "icon": "places:all-inclusive",
@@ -459,7 +475,7 @@ class HAXService {
           "protocol": "https",
           "url": "pixabay.com",
           "data": {
-            "key": "' . $apikeys['pixabay'] . '"
+            "key": "' . $api_keys['pixabay'] . '"
           },
           "operations": {
             "browse": {
@@ -502,11 +518,12 @@ class HAXService {
           }
         }
       }';
-      $tmp = json_decode($jsonstring);
+      $tmp = json_decode($json_string);
       array_push($json, $tmp);
     }
-    // nasa
-    $jsonstring = '{
+
+    // Nasa.
+    $json_string = '{
       "details": {
         "title": "NASA",
         "icon": "places:all-inclusive",
@@ -561,10 +578,11 @@ class HAXService {
         }
       }
     }';
-    $tmp = json_decode($jsonstring);
+    $tmp = json_decode($json_string);
     array_push($json, $tmp);
-    // sketchfab
-    $jsonstring = '{
+
+    // Sketchfab.
+    $json_string = '{
       "details": {
         "title": "Sketchfab",
         "icon": "icons:3d-rotation",
@@ -628,10 +646,11 @@ class HAXService {
         }
       }
     }';
-    $tmp = json_decode($jsonstring);
+    $tmp = json_decode($json_string);
     array_push($json, $tmp);
-    // dailymotion
-    $jsonstring = '{
+
+    // Dailymotion.
+    $json_string = '{
       "details": {
         "title": "Dailymotion",
         "icon": "av:play-circle-filled",
@@ -690,10 +709,11 @@ class HAXService {
         }
       }
     }';
-    $tmp = json_decode($jsonstring);
+    $tmp = json_decode($json_string);
     array_push($json, $tmp);
-    // wikipedia
-    $jsonstring = '{
+
+    // Wikipedia.
+    $json_string = '{
       "details": {
         "title": "Wikipedia",
         "icon": "account-balance",
@@ -750,10 +770,11 @@ class HAXService {
         }
       }
     }';
-    $tmp = json_decode($jsonstring);
+    $tmp = json_decode($json_string);
     array_push($json, $tmp);
-    // cc-mixter
-    $jsonstring = '{
+
+    // Cc-mixter.
+    $json_string = '{
       "details": {
         "title": "CC Mixter",
         "icon": "av:library-music",
@@ -818,10 +839,11 @@ class HAXService {
         }
       }
     }';
-    $tmp = json_decode($jsonstring);
+    $tmp = json_decode($json_string);
     array_push($json, $tmp);
-    // codepen
-    $jsonstring = '{
+
+    // Codepen.
+    $json_string = '{
       "details": {
         "title": "Codepen.io",
         "icon": "code",
@@ -875,15 +897,20 @@ class HAXService {
         }
       }
     }';
-    $tmp = json_decode($jsonstring);
+    $tmp = json_decode($json_string);
     array_push($json, $tmp);
 
     return $json;
   }
+
   /**
-   * Return an array of the base app keys we support. This
-   * can reduce the time to integrate with other solutions.
-   * @return array  service names keyed by their key name
+   * Supported apps.
+   *
+   * Return an array of the base app keys we support. This can reduce the time
+   * to integrate with other solutions.
+   *
+   * @return array
+   *   Service names keyed by their key name.
    */
   public function baseSupportedApps() {
     return array(
@@ -917,4 +944,5 @@ class HAXService {
       ),
     );
   }
+
 }
