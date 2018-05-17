@@ -14,34 +14,6 @@ use Symfony\Component\HttpFoundation\Response;
 class HaxController extends NodeViewController {
 
   /**
-   * Hax node edit form.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $node
-   *   The node.
-   * @param string $view_mode
-   *   The node's view mode.
-   * @param null $langcode
-   *   The node's langcode.
-   *
-   * @return array
-   *   The node's view render array.
-   *
-   * @todo: There's a good chance this logic isn't invoked.
-   */
-  public function haxNodeForm(EntityInterface $node, $view_mode = 'full', $langcode = NULL) {
-    // Based on NodeViewController's view() method.
-    $build = parent::view($node, $view_mode, $langcode);
-
-    // This method only seems useful for adding attachments, but not for
-    // altering. Much of the contents of $build['#node'] are protected
-    // Is hax_node_view() a better place for altering the node field output?
-    // Or are there other hooks we're missing?
-    // TODO maybe just route to the canonical if we end up not actually using
-    // this controller.
-    return $build;
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function title(EntityInterface $node) {
@@ -62,7 +34,7 @@ class HaxController extends NodeViewController {
    * @return \Drupal\Core\Access\AccessResultAllowed|\Drupal\Core\Access\AccessResultForbidden
    *   Either allowed or forbidden access response.
    */
-  public function haxNodeAccess($op, NodeInterface $node) {
+  public function access($op, NodeInterface $node) {
 
     if (\Drupal::currentUser()->hasPermission('use hax') && node_node_access($node, $op, \Drupal::currentUser())) {
       return AccessResult::allowed();
@@ -84,7 +56,7 @@ class HaxController extends NodeViewController {
    * @throws \Drupal\Core\Entity\EntityStorageException
    * @throws \Drupal\Core\TypedData\Exception\ReadOnlyException
    */
-  public function haxNodeSave(NodeInterface $node, $token) {
+  public function save(NodeInterface $node, $token) {
 
     if (
       $_SERVER['REQUEST_METHOD'] == 'PUT' &&
@@ -143,7 +115,7 @@ class HaxController extends NodeViewController {
    *
    * @todo: param does not appear to be used.  Remove?
    */
-  public function haxFileAccess($op) {
+  public function fileAccess($op) {
     // Ensure there are entity permissions to create a file via HAX.
     // See https://www.drupal.org/project/hax/issues/2962055#comment-12617576
     if (\Drupal::currentUser()->hasPermission('use hax') &&
@@ -166,7 +138,7 @@ class HaxController extends NodeViewController {
    *
    * @todo: Update data type for token.
    */
-  public function haxFileSave($token) {
+  public function fileSave($token) {
     $status = 403;
     $return = '';
 
@@ -218,7 +190,7 @@ class HaxController extends NodeViewController {
    * @return \Symfony\Component\HttpFoundation\Response
    *   The http response.
    */
-  public function haxLoadAppStore($token) {
+  public function loadAppStore($token) {
     // Ensure we had data PUT here and it is valid.
     if (\Drupal::csrfToken()->validate($token)) {
 
