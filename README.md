@@ -32,10 +32,6 @@ Answer any questions bearing in mind that hax currently is written against
 webcomponentsjs 0.7.x and polymer 1.11.x as of this writing. You will have the
 dependencies needed.
 
-## Gather dependencies
-
-Download the REST UI module: https://www.drupal.org/project/restui
-
 ## Usage
 
 This should give you the dependencies you need to get going.
