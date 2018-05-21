@@ -184,11 +184,17 @@ function hax_page_attachments(array &$attachments) {
   // Need this to execute on variations of route.name to support view and
   // hax mode tab variation.
   // @todo: As written, this code has no impact.  Need to impact $attachments.
-  $vars['#cache']['contexts'][] = 'route.name';
+  // Unnecessary, it appears. Remnant from paste from hax_preprocess_field().
+  // Slated for removal, once completely confirmed.
+  //$vars['#cache']['contexts'][] = 'route.name';
 
-  if (!hax_is_current_route_supported()) {
-    return;
-  }
+  // Slated for removal - unless we determine we're shotgunning too much with
+  // our attachments, in which case we'd need a wider
+  // hax_is_current_route_supported() determination that will allow us to have
+  // the attachments on both the hax mode and node view pages.
+  //if (!hax_is_current_route_supported()) {
+  //  return;
+  //}
 
   // Fake a component to get it into the head of the document, heavy weighting.
   $component = new \stdClass();
