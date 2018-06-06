@@ -223,10 +223,16 @@ class HaxController extends NodeViewController {
     if (\Drupal::csrfToken()->validate($token)) {
 
       // Hooks and alters.
+      // Add/alter apps.
       $appStore = \Drupal::moduleHandler()->invokeAll('hax_app_store');
       \Drupal::moduleHandler()->alter('hax_app_store', $appStore);
+      // Add/alter templates. For reference, see appstore.json in
+      // libraries/webcomponents/polymer/bower_components/hax-body/demo/
       $staxList = \Drupal::moduleHandler()->invokeAll('hax_stax');
       \Drupal::moduleHandler()->alter('hax_stax', $staxList);
+      // Add/alter layouts.
+      $bloxList = \Drupal::moduleHandler()->invokeAll('hax_blox');
+      \Drupal::moduleHandler()->alter('hax_blox', $bloxList);
 
       // Send the Response object with Apps and StaxList.
       $response = new Response();
@@ -236,6 +242,7 @@ class HaxController extends NodeViewController {
         'status' => 200,
         'apps' => $appStore,
         'stax' => $staxList,
+        'blox' => $bloxList,
       ]));
 
       return $response;
